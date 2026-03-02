@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — MedAssist</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-page">
+  <div id="navbar-placeholder"></div>
+
+  <div class="auth-layout">
+    <!-- Left Visual Panel -->
+    <div class="auth-visual">
+      <div class="auth-visual-content">
+        <h2 class="auth-visual-title">Welcome Back to MedAssist</h2>
+        <p class="auth-visual-subtitle">Sign in to access your personalized health dashboard, AI symptom analysis, and complete medical history.</p>
+        <ul class="auth-features">
+          <li class="auth-feature">
+            <div class="auth-feature-icon">📊</div>
+            <div class="auth-feature-text">
+              <div class="auth-feature-title">Personal Dashboard</div>
+              View your health overview, vitals, and recent activity
+            </div>
+          </li>
+          <li class="auth-feature">
+            <div class="auth-feature-icon">🔍</div>
+            <div class="auth-feature-text">
+              <div class="auth-feature-title">Symptom History</div>
+              Access your past symptom analyses and AI insights
+            </div>
+          </li>
+          <li class="auth-feature">
+            <div class="auth-feature-icon">🛡️</div>
+            <div class="auth-feature-text">
+              <div class="auth-feature-title">Your Data, Protected</div>
+              End-to-end encrypted health information storage
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+        <div class="auth-form-header">
+          <h1 class="auth-form-title">Sign In</h1>
+          <p class="auth-form-subtitle">Enter your credentials to access your dashboard</p>
+        </div>
+
+        <div id="form-alert"></div>
+
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input type="email" id="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="password" name="password" class="form-control" placeholder="Your password" autocomplete="current-password">
+              <button type="button" class="input-toggle" id="togglePassword" aria-label="Toggle password">👁</button>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <label class="checkbox-group">
+              <input type="checkbox" id="rememberMe" name="rememberMe">
+              Remember me for 30 days
+            </label>
+            <a href="forgot-password.html" style="font-size:0.875rem;font-weight:600;color:var(--primary)">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="login-btn">Sign In</button>
+        </form>
+
+        <div class="auth-divider">or</div>
+
+        <div class="auth-footer-link">
+          Don't have an account? <a href="register.html" style="font-weight:700;color:var(--primary)">Create one free</a>
+        </div>
+
+        <!-- Demo credentials notice -->
+        <div style="margin-top:20px;padding:14px;background:var(--info-light);border:1px solid #67e8f9;border-radius:8px;font-size:0.8rem;color:#164e63;">
+          <strong>ℹ️ Setup Note:</strong> Make sure the backend server is running on port 5000 with MongoDB connected. See the <code>server/</code> directory for setup instructions.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/utils.js"></script>
+  <script>
+    document.getElementById('navbar-placeholder').innerHTML = buildNavbar('login');
+    document.getElementById('footer-placeholder').innerHTML = buildFooter();
+    Auth.redirectIfLoggedIn();
+
+    // Password toggle
+    const pwInput = document.getElementById('password');
+    document.getElementById('togglePassword').addEventListener('click', function () {
+      pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
+      this.textContent = pwInput.type === 'password' ? '👁' : '🙈';
+    });
+
+    // Login form
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      Form.clearErrors(document.getElementById('login-form'));
+      Form.clearAlert('form-alert');
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
+
+      let valid = true;
+      if (!email) { Form.showError('email', 'Email is required'); valid = false; }
+      if (!password) { Form.showError('password', 'Password is required'); valid = false; }
+      if (!valid) return;
+
+      const loginBtn = document.getElementById('login-btn');
+      Loader.setBtn(loginBtn, true, 'Signing in...');
+
+      const res = await api.post('/auth/login', { email, password, rememberMe });
+
+      if (res && res.ok && res.data.success) {
+        Auth.setToken(res.data.token, rememberMe);
+        Auth.setUser(res.data.user, rememberMe);
+        Toast.success('Welcome back! Redirecting...');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+      } else {
+        Loader.setBtn(loginBtn, false);
+        const msg = res?.data?.message || 'Login failed. Please try again.';
+        Form.showAlert('form-alert', msg, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

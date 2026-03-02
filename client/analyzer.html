@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symptom Analyzer — MedAssist</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/analyzer.css">
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <div class="analyzer-layout">
+    <!-- Input Form -->
+    <div id="input-view">
+      <div class="analyzer-form-card">
+        <div class="analyzer-header">
+          <div class="analyzer-icon">🤖</div>
+          <div>
+            <h1 class="analyzer-title">AI Symptom Analyzer</h1>
+            <p class="analyzer-subtitle">Describe your symptoms for an AI-powered health assessment</p>
+          </div>
+        </div>
+
+        <div id="form-alert"></div>
+
+        <form id="symptom-form" novalidate>
+          <!-- Common symptom chips -->
+          <div class="form-group">
+            <label class="form-label">Quick Add Common Symptoms</label>
+            <div class="symptom-chips" id="symptom-chips">
+              <span class="symptom-chip" data-symptom="Headache">Headache</span>
+              <span class="symptom-chip" data-symptom="Fever">Fever</span>
+              <span class="symptom-chip" data-symptom="Cough">Cough</span>
+              <span class="symptom-chip" data-symptom="Fatigue">Fatigue</span>
+              <span class="symptom-chip" data-symptom="Nausea">Nausea</span>
+              <span class="symptom-chip" data-symptom="Sore throat">Sore throat</span>
+              <span class="symptom-chip" data-symptom="Shortness of breath">Shortness of breath</span>
+              <span class="symptom-chip" data-symptom="Chest pain">Chest pain</span>
+              <span class="symptom-chip" data-symptom="Dizziness">Dizziness</span>
+              <span class="symptom-chip" data-symptom="Back pain">Back pain</span>
+              <span class="symptom-chip" data-symptom="Abdominal pain">Abdominal pain</span>
+              <span class="symptom-chip" data-symptom="Runny nose">Runny nose</span>
+            </div>
+          </div>
+
+          <!-- Symptom description -->
+          <div class="form-group">
+            <label class="form-label" for="symptoms">Describe Your Symptoms <span class="required">*</span></label>
+            <textarea
+              id="symptoms"
+              name="symptoms"
+              class="form-control"
+              rows="5"
+              placeholder="Please describe your symptoms in detail. For example: 'I have been experiencing a severe headache for the past 2 days, mainly on the left side, along with sensitivity to light and mild nausea...'"
+              maxlength="2000"
+            ></textarea>
+            <p class="form-helper"><span id="char-count">0</span>/2000 characters</p>
+          </div>
+
+          <div class="form-row">
+            <!-- Duration -->
+            <div class="form-group">
+              <label class="form-label" for="duration">How long have you had these symptoms?</label>
+              <select id="duration" name="duration" class="form-control">
+                <option value="">Select duration</option>
+                <option value="Less than 24 hours">Less than 24 hours</option>
+                <option value="1-3 days">1–3 days</option>
+                <option value="4-7 days">4–7 days</option>
+                <option value="1-2 weeks">1–2 weeks</option>
+                <option value="2-4 weeks">2–4 weeks</option>
+                <option value="More than 1 month">More than 1 month</option>
+                <option value="Chronic/recurring">Chronic/recurring</option>
+              </select>
+            </div>
+
+            <!-- Severity -->
+            <div class="form-group">
+              <label class="form-label">Self-Reported Severity</label>
+              <div class="severity-selector">
+                <label class="severity-option" data-value="mild" id="sev-mild">
+                  <input type="radio" name="severity" value="mild" id="severity-mild">
+                  <span>😌 Mild</span><br><span style="font-size:0.75rem;opacity:0.7">Manageable, daily activities ok</span>
+                </label>
+                <label class="severity-option" data-value="moderate" id="sev-moderate">
+                  <input type="radio" name="severity" value="moderate" id="severity-moderate">
+                  <span>😕 Moderate</span><br><span style="font-size:0.75rem;opacity:0.7">Affecting daily activities</span>
+                </label>
+                <label class="severity-option" data-value="severe" id="sev-severe">
+                  <input type="radio" name="severity" value="severe" id="severity-severe">
+                  <span>😰 Severe</span><br><span style="font-size:0.75rem;opacity:0.7">Significantly limiting function</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional info -->
+          <div class="form-group">
+            <label class="form-label" for="additionalInfo">Additional Information (Optional)</label>
+            <textarea
+              id="additionalInfo"
+              name="additionalInfo"
+              class="form-control"
+              rows="2"
+              placeholder="Any relevant context: recent travel, known exposures, similar past episodes, existing conditions..."
+              maxlength="1000"
+            ></textarea>
+          </div>
+
+          <!-- Emergency Warning -->
+          <div class="alert alert-error mb-4">
+            <span>🚨</span>
+            <span><strong>Emergency Warning:</strong> If you experience chest pain, difficulty breathing, stroke symptoms, severe allergic reaction, or any life-threatening condition — <strong>call 911 immediately</strong> or go to the nearest emergency room. Do NOT use this analyzer.</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg btn-full" id="analyze-btn">
+            🔍 Analyze Symptoms
+          </button>
+        </form>
+      </div>
+
+      <!-- History preview -->
+      <div class="card" id="history-preview" style="display:none;">
+        <div class="card-header">
+          <span class="card-title">🔄 Recent Analyses</span>
+          <a href="dashboard.html#symptom-history" class="btn btn-sm btn-ghost">View All</a>
+        </div>
+        <div id="history-preview-list"></div>
+      </div>
+    </div>
+
+    <!-- Analyzing state -->
+    <div id="analyzing-view" class="hidden">
+      <div class="analyzing-overlay">
+        <div class="analyzing-animation">
+          <div class="pulse-ring">🔬</div>
+        </div>
+        <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px">Analyzing Your Symptoms</h2>
+        <p class="text-secondary mb-6">Our AI is processing your information. This may take a few seconds.</p>
+        <ul class="analyzing-steps">
+          <li class="analyzing-step active" id="astep-1">
+            <span class="analyzing-step-icon">📝</span> Processing symptom description
+          </li>
+          <li class="analyzing-step" id="astep-2">
+            <span class="analyzing-step-icon">🧠</span> Running AI analysis
+          </li>
+          <li class="analyzing-step" id="astep-3">
+            <span class="analyzing-step-icon">🔍</span> Evaluating potential conditions
+          </li>
+          <li class="analyzing-step" id="astep-4">
+            <span class="analyzing-step-icon">📊</span> Generating recommendations
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Results view -->
+    <div id="results-view" class="hidden">
+      <div class="results-container" id="results-container"></div>
+    </div>
+  </div>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/analyzer.js"></script>
+</body>
+</html>

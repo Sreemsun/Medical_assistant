@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — MedAssist</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-page">
+  <div id="navbar-placeholder"></div>
+
+  <div class="auth-layout">
+    <!-- Left Visual Panel -->
+    <div class="auth-visual">
+      <div class="auth-visual-content">
+        <h2 class="auth-visual-title">Start Your Health Journey Today</h2>
+        <p class="auth-visual-subtitle">Create your free account and gain access to AI-powered symptom analysis, personal medical records, and comprehensive health tracking.</p>
+        <ul class="auth-features">
+          <li class="auth-feature">
+            <div class="auth-feature-icon">🤖</div>
+            <div class="auth-feature-text">
+              <div class="auth-feature-title">AI Symptom Analyzer</div>
+              Instant analysis of your symptoms with condition suggestions
+            </div>
+          </li>
+          <li class="auth-feature">
+            <div class="auth-feature-icon">📋</div>
+            <div class="auth-feature-text">
+              <div class="auth-feature-title">Medical Records</div>
+              Store and access your complete health history securely
+            </div>
+          </li>
+          <li class="auth-feature">
+            <div class="auth-feature-icon">❤️</div>
+            <div class="auth-feature-text">
+              <div class="auth-feature-title">Vital Signs Tracking</div>
+              Monitor blood pressure, heart rate, and more over time
+            </div>
+          </li>
+          <li class="auth-feature">
+            <div class="auth-feature-icon">🔒</div>
+            <div class="auth-feature-text">
+              <div class="auth-feature-title">Bank-Grade Security</div>
+              Your health data encrypted and protected at all times
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="auth-form-panel">
+      <div class="auth-form-box">
+        <div class="auth-form-header">
+          <h1 class="auth-form-title">Create Your Account</h1>
+          <p class="auth-form-subtitle">Join MedAssist — it's free and secure</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="step-indicator">
+          <div class="step-item active" id="step-ind-1">
+            <div class="step-circle">1</div>
+            <div class="step-label">Account</div>
+          </div>
+          <div class="step-item" id="step-ind-2">
+            <div class="step-circle">2</div>
+            <div class="step-label">Personal</div>
+          </div>
+          <div class="step-item" id="step-ind-3">
+            <div class="step-circle">3</div>
+            <div class="step-label">Medical</div>
+          </div>
+        </div>
+
+        <!-- Alert area -->
+        <div id="form-alert"></div>
+
+        <form id="register-form" novalidate>
+          <!-- Step 1: Account Info -->
+          <div class="form-step active" id="step-1">
+            <div class="form-group">
+              <label class="form-label" for="fullName">Full Name <span class="required">*</span></label>
+              <input type="text" id="fullName" name="fullName" class="form-control" placeholder="Enter your full name" autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">Email Address <span class="required">*</span></label>
+              <input type="email" id="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="password">Password <span class="required">*</span></label>
+              <div class="input-wrapper">
+                <input type="password" id="password" name="password" class="form-control" placeholder="Min. 8 characters" autocomplete="new-password">
+                <button type="button" class="input-toggle" id="togglePassword" aria-label="Toggle password">👁</button>
+              </div>
+              <div class="password-strength">
+                <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+                <div class="strength-text" id="strength-text"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="confirmPassword">Confirm Password <span class="required">*</span></label>
+              <div class="input-wrapper">
+                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Repeat your password" autocomplete="new-password">
+                <button type="button" class="input-toggle" id="toggleConfirm" aria-label="Toggle password">👁</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-full" id="next-step-1">Continue →</button>
+          </div>
+
+          <!-- Step 2: Personal Info -->
+          <div class="form-step" id="step-2">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="age">Age</label>
+                <input type="number" id="age" name="age" class="form-control" placeholder="Your age" min="0" max="150">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="gender">Gender</label>
+                <select id="gender" name="gender" class="form-control">
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="dateOfBirth">Date of Birth</label>
+              <input type="date" id="dateOfBirth" name="dateOfBirth" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="phoneNumber">Phone Number</label>
+              <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control" placeholder="+1 (555) 000-0000">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="bloodType">Blood Type</label>
+              <select id="bloodType" name="bloodType" class="form-control">
+                <option value="">Select blood type</option>
+                <option value="A+">A+</option><option value="A-">A-</option>
+                <option value="B+">B+</option><option value="B-">B-</option>
+                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                <option value="O+">O+</option><option value="O-">O-</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button type="button" class="btn btn-ghost btn-full" id="back-step-2">← Back</button>
+              <button type="button" class="btn btn-primary btn-full" id="next-step-2">Continue →</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Medical Info -->
+          <div class="form-step" id="step-3">
+            <div class="form-group">
+              <label class="form-label">Chronic Conditions</label>
+              <p class="form-helper">Type a condition and press Enter to add it as a tag</p>
+              <div class="tags-input" id="conditions-input">
+                <input type="text" class="tag-input" id="condition-text" placeholder="e.g., Diabetes, Hypertension...">
+              </div>
+              <input type="hidden" id="chronicConditions" name="chronicConditions">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Known Allergies</label>
+              <p class="form-helper">Type an allergy and press Enter to add it</p>
+              <div class="tags-input" id="allergies-input">
+                <input type="text" class="tag-input" id="allergy-text" placeholder="e.g., Penicillin, Peanuts...">
+              </div>
+              <input type="hidden" id="allergiesList" name="allergiesList">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="emergencyName">Emergency Contact Name</label>
+              <input type="text" id="emergencyName" name="emergencyName" class="form-control" placeholder="Contact's full name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="emergencyRelation">Relationship</label>
+                <input type="text" id="emergencyRelation" name="emergencyRelation" class="form-control" placeholder="e.g., Spouse">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="emergencyPhone">Phone</label>
+                <input type="tel" id="emergencyPhone" name="emergencyPhone" class="form-control" placeholder="+1 (555) 000-0000">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-group">
+                <input type="checkbox" id="terms" name="terms">
+                I agree to the <a href="#" style="font-weight:600">Terms of Service</a> and <a href="#" style="font-weight:600">Privacy Policy</a>
+              </label>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button type="button" class="btn btn-ghost btn-full" id="back-step-3">← Back</button>
+              <button type="submit" class="btn btn-primary btn-full" id="submit-btn">Create Account</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="auth-footer-link">
+          Already have an account? <a href="login.html" style="font-weight:600">Sign in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/utils.js"></script>
+  <script>
+    document.getElementById('navbar-placeholder').innerHTML = buildNavbar('register');
+    document.getElementById('footer-placeholder').innerHTML = buildFooter();
+    Auth.redirectIfLoggedIn();
+
+    // Multi-step logic
+    let currentStep = 1;
+    const conditions = [];
+    const allergies = [];
+
+    const showStep = (step) => {
+      document.querySelectorAll('.form-step').forEach((s, i) => {
+        s.classList.toggle('active', i + 1 === step);
+      });
+      document.querySelectorAll('#register-form .step-item').forEach((el, i) => {
+        el.classList.remove('active', 'done');
+        if (i + 1 === step) el.classList.add('active');
+        if (i + 1 < step) el.classList.add('done');
+      });
+      currentStep = step;
+    };
+
+    // Password toggle
+    const setupToggle = (inputId, btnId) => {
+      const input = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      btn.addEventListener('click', () => {
+        input.type = input.type === 'password' ? 'text' : 'password';
+        btn.textContent = input.type === 'password' ? '👁' : '🙈';
+      });
+    };
+    setupToggle('password', 'togglePassword');
+    setupToggle('confirmPassword', 'toggleConfirm');
+
+    // Password strength
+    PasswordStrength.attach('password', 'strength-fill', 'strength-text');
+
+    // Step 1 validation
+    document.getElementById('next-step-1').addEventListener('click', () => {
+      Form.clearErrors(document.getElementById('register-form'));
+      Form.clearAlert('form-alert');
+
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirmPassword').value;
+      let valid = true;
+
+      if (!fullName || fullName.length < 2) { Form.showError('fullName', 'Full name must be at least 2 characters'); valid = false; }
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) { Form.showError('email', 'Please enter a valid email address'); valid = false; }
+      if (!password || password.length < 8) { Form.showError('password', 'Password must be at least 8 characters'); valid = false; }
+      else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) { Form.showError('password', 'Must contain uppercase, lowercase, and a number'); valid = false; }
+      if (password !== confirm) { Form.showError('confirmPassword', 'Passwords do not match'); valid = false; }
+
+      if (valid) showStep(2);
+    });
+
+    document.getElementById('back-step-2').addEventListener('click', () => showStep(1));
+    document.getElementById('next-step-2').addEventListener('click', () => showStep(3));
+    document.getElementById('back-step-3').addEventListener('click', () => showStep(2));
+
+    // Tags system
+    const setupTags = (inputId, displayId, hiddenId, arr) => {
+      const textInput = document.getElementById(inputId);
+      const display = document.getElementById(displayId);
+      const hidden = document.getElementById(hiddenId);
+
+      const renderTags = () => {
+        display.querySelectorAll('.tag').forEach(t => t.remove());
+        arr.forEach((item, i) => {
+          const tag = document.createElement('span');
+          tag.className = 'tag';
+          tag.innerHTML = `${item} <button class="tag-remove" data-i="${i}">×</button>`;
+          display.insertBefore(tag, textInput.parentElement || textInput);
+          display.insertBefore(tag, display.firstChild);
+        });
+        hidden.value = JSON.stringify(arr);
+      };
+
+      textInput.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ',') && textInput.value.trim()) {
+          e.preventDefault();
+          arr.push(textInput.value.trim());
+          textInput.value = '';
+          renderTags();
+        }
+      });
+
+      display.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tag-remove')) {
+          arr.splice(parseInt(e.target.dataset.i), 1);
+          renderTags();
+        }
+      });
+    };
+
+    setupTags('condition-text', 'conditions-input', 'chronicConditions', conditions);
+    setupTags('allergy-text', 'allergies-input', 'allergiesList', allergies);
+
+    // Form submit
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      Form.clearAlert('form-alert');
+
+      if (!document.getElementById('terms').checked) {
+        Form.showAlert('form-alert', 'Please accept the Terms of Service to continue.', 'warning');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submit-btn');
+      Loader.setBtn(submitBtn, true, 'Creating account...');
+
+      const body = {
+        fullName: document.getElementById('fullName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        age: document.getElementById('age').value || undefined,
+        gender: document.getElementById('gender').value || undefined,
+        dateOfBirth: document.getElementById('dateOfBirth').value || undefined,
+        bloodType: document.getElementById('bloodType').value || undefined,
+        chronicConditions: conditions.length ? conditions : undefined,
+        emergencyContact: {
+          name: document.getElementById('emergencyName').value.trim() || undefined,
+          relationship: document.getElementById('emergencyRelation').value.trim() || undefined,
+          phone: document.getElementById('emergencyPhone').value.trim() || undefined,
+        },
+      };
+
+      const res = await api.post('/auth/register', body);
+
+      if (res && res.ok && res.data.success) {
+        const remember = false;
+        Auth.setToken(res.data.token, remember);
+        Auth.setUser(res.data.user, remember);
+        Toast.success('Account created! Redirecting to dashboard...');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+      } else {
+        Loader.setBtn(submitBtn, false);
+        const msg = res?.data?.message || 'Registration failed. Please try again.';
+        Form.showAlert('form-alert', msg, 'error');
+        if (res?.data?.errors) {
+          res.data.errors.forEach(err => Form.showError(err.field, err.message));
+        }
+      }
+    });
+  </script>
+</body>
+</html>

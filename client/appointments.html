@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Appointment – MedAssist</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/appointments.css" />
+</head>
+<body>
+
+  <!-- Navbar injected by utils.js -->
+  <div id="navbar"></div>
+
+  <main class="appt-page">
+    <div class="appt-container">
+
+      <!-- Page Header -->
+      <div class="appt-header">
+        <div class="appt-header-text">
+          <h1 class="appt-title">Book an Appointment</h1>
+          <p class="appt-subtitle">Choose a doctor, pick a convenient date and time, and confirm your visit in seconds.</p>
+        </div>
+        <a href="#my-appointments" class="btn btn-outline-primary">View My Appointments</a>
+      </div>
+
+      <!-- ── Doctor Search / Filter ──────────────────────────── -->
+      <div class="appt-filters">
+        <input type="text" id="doctorSearch" class="form-control" placeholder="Search by name or specialty…" />
+        <select id="specialtyFilter" class="form-control">
+          <option value="">All Specialties</option>
+        </select>
+      </div>
+
+      <!-- ── Doctor Cards Grid ──────────────────────────────── -->
+      <div class="doctors-grid" id="doctorsGrid">
+        <div class="loading-spinner-wrap">
+          <div class="loading-spinner"></div>
+        </div>
+      </div>
+
+      <!-- ── My Appointments ────────────────────────────────── -->
+      <section class="my-appointments" id="my-appointments">
+        <div class="section-heading">
+          <h2>My Appointments</h2>
+          <div class="appt-status-tabs">
+            <button class="status-tab active" data-filter="all">All</button>
+            <button class="status-tab" data-filter="pending">Pending</button>
+            <button class="status-tab" data-filter="confirmed">Confirmed</button>
+            <button class="status-tab" data-filter="completed">Completed</button>
+            <button class="status-tab" data-filter="cancelled">Cancelled</button>
+          </div>
+        </div>
+        <div id="appointmentsList" class="appointments-list">
+          <div class="loading-spinner-wrap">
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /.appt-container -->
+  </main>
+
+  <!-- ── Booking Modal ────────────────────────────────────────── -->
+  <div class="modal-overlay" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="modalDoctorName">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-doctor-info">
+          <div class="modal-avatar" id="modalAvatar"></div>
+          <div>
+            <h3 id="modalDoctorName">Doctor Name</h3>
+            <span class="modal-specialty" id="modalSpecialty"></span>
+          </div>
+        </div>
+        <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      </div>
+
+      <form class="booking-form" id="bookingForm" novalidate>
+        <input type="hidden" id="fieldDoctorId" />
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fieldDate">Date <span class="required">*</span></label>
+            <input type="date" id="fieldDate" class="form-control" required />
+            <p class="form-hint" id="availabilityHint"></p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fieldSlot">Time Slot <span class="required">*</span></label>
+            <select id="fieldSlot" class="form-control" required disabled>
+              <option value="">— pick a date first —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldReason">Reason for Visit <span class="required">*</span></label>
+          <textarea id="fieldReason" class="form-control" rows="3" maxlength="500" placeholder="Briefly describe your symptoms or reason for the visit…" required></textarea>
+          <p class="char-count"><span id="reasonCount">0</span>/500</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fieldNotes">Additional Notes <span class="optional">(optional)</span></label>
+          <textarea id="fieldNotes" class="form-control" rows="2" maxlength="1000" placeholder="Any allergies, current medications, or context the doctor should know…"></textarea>
+        </div>
+
+        <div class="form-alert" id="bookingAlert" style="display:none;"></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitBooking">
+            <span class="btn-label">Confirm Appointment</span>
+            <span class="btn-spinner" style="display:none;"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Success Toast ──────────────────────────────────────── -->
+  <div class="toast" id="successToast" role="alert"></div>
+
+  <!-- Footer injected by utils.js -->
+  <div id="footer"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/appointments.js"></script>
+</body>
+</html>

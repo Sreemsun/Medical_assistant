@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — MedAssist</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+        <div>
+          <div class="sidebar-user-name" id="sidebarName">Loading...</div>
+          <div class="sidebar-user-email" id="sidebarEmail"></div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Overview</div>
+        <button class="sidebar-link active" data-section="overview">
+          <span class="link-icon">📊</span> Overview
+        </button>
+        <button class="sidebar-link" data-section="profile">
+          <span class="link-icon">👤</span> My Profile
+        </button>
+
+        <div class="sidebar-section-label">Medical Data</div>
+        <button class="sidebar-link" data-section="vitals">
+          <span class="link-icon">❤️</span> Vital Signs
+        </button>
+        <button class="sidebar-link" data-section="medications">
+          <span class="link-icon">💊</span> Medications
+        </button>
+        <button class="sidebar-link" data-section="allergies">
+          <span class="link-icon">⚠️</span> Allergies
+        </button>
+        <button class="sidebar-link" data-section="medical-records">
+          <span class="link-icon">📋</span> Medical Records
+        </button>
+
+        <div class="sidebar-section-label">Analysis</div>
+        <a class="sidebar-link" href="analyzer.html">
+          <span class="link-icon">🤖</span> Symptom Analyzer
+        </a>
+        <button class="sidebar-link" data-section="symptom-history">
+          <span class="link-icon">🔍</span> Symptom History
+        </button>
+
+        <div class="sidebar-section-label">Settings</div>
+        <button class="sidebar-link" data-section="settings">
+          <span class="link-icon">⚙️</span> Account Settings
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-link" onclick="Auth.logout()" style="color:var(--danger)">
+          <span class="link-icon">🚪</span> Log Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <!-- Mobile sidebar toggle (shows on small screens via CSS) -->
+      <button class="btn btn-ghost btn-sm" id="sidebarToggle" style="display:none;margin-bottom:16px;">☰ Menu</button>
+
+      <!-- ── Overview Section ─────────────────────────────── -->
+      <section class="dash-section active" id="section-overview">
+        <div class="section-header">
+          <h1 class="section-title" id="welcome-title">Welcome back!</h1>
+          <p class="section-subtitle">Here's your health overview for today</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">💊</div>
+            <div>
+              <div class="stat-label">Medications</div>
+              <div class="stat-value" id="stat-medications">—</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card-btn" id="vitalsStatCard" onclick="openHealthVitalsModal()" title="View all health vitals">
+            <div class="stat-icon green">❤️</div>
+            <div style="flex:1">
+              <div class="stat-label">Health Vitals</div>
+              <div class="stat-value" id="stat-bp" style="font-size:0.85rem">View Details</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="opacity:.45;flex-shrink:0"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange">⚠️</div>
+            <div>
+              <div class="stat-label">Allergies</div>
+              <div class="stat-value" id="stat-allergies">—</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple">🤖</div>
+            <div>
+              <div class="stat-label">AI Queries</div>
+              <div class="stat-value" id="stat-queries">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Grid -->
+        <div class="data-grid">
+          <!-- Recent Vitals -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">❤️ Recent Vital Signs</span>
+              <button class="btn btn-sm btn-secondary" onclick="showSection('vitals')">View All</button>
+            </div>
+            <div id="overview-vitals">
+              <p class="text-muted text-sm">No vital signs recorded yet.</p>
+            </div>
+          </div>
+          <!-- Recent Queries -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🤖 Recent AI Queries</span>
+              <a href="analyzer.html" class="btn btn-sm btn-secondary">New Analysis</a>
+            </div>
+            <div id="overview-queries">
+              <p class="text-muted text-sm">No symptom analyses yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Medical Records -->
+        <div class="card mt-6">
+          <div class="card-header">
+            <span class="card-title">📋 Recent Medical Records</span>
+            <button class="btn btn-sm btn-secondary" onclick="showSection('medical-records')">View All</button>
+          </div>
+          <div id="overview-records">
+            <p class="text-muted text-sm">No medical records added yet.</p>
+          </div>
+        </div>
+
+        <!-- Upcoming Appointments -->
+        <div class="card mt-6">
+          <div class="card-header">
+            <span class="card-title">📅 Upcoming Appointments</span>
+            <a href="appointments.html" class="btn btn-sm btn-secondary">Book / Manage</a>
+          </div>
+          <div id="overview-appointments">
+            <p class="text-muted text-sm">No upcoming appointments.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Profile Section ─────────────────────────────── -->
+      <section class="dash-section" id="section-profile">
+        <div class="section-header">
+          <h2 class="section-title">My Profile</h2>
+          <p class="section-subtitle">Manage your personal and contact information</p>
+        </div>
+
+        <div id="profile-header-card-container"></div>
+
+        <div class="data-grid mt-6">
+          <!-- Edit Personal Info -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">👤 Personal Information</span>
+              <button class="btn btn-sm btn-secondary" id="editProfileBtn">Edit</button>
+            </div>
+            <div id="profile-info-view"></div>
+            <form id="profile-edit-form" class="hidden">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="edit-fullName">Full Name</label>
+                  <input type="text" id="edit-fullName" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="edit-age">Age</label>
+                  <input type="number" id="edit-age" class="form-control" min="0" max="150">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="edit-gender">Gender</label>
+                  <select id="edit-gender" class="form-control">
+                    <option value="">Select</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="edit-bloodType">Blood Type</label>
+                  <select id="edit-bloodType" class="form-control">
+                    <option value="">Select</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
+                    <option value="unknown">Unknown</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-phone">Phone Number</label>
+                <input type="tel" id="edit-phone" class="form-control">
+              </div>
+              <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+                <button type="button" class="btn btn-ghost btn-sm" id="cancelProfileEdit">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="saveProfileBtn">Save Changes</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Emergency Contact -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🚨 Emergency Contact</span>
+            </div>
+            <div id="emergency-contact-view"></div>
+          </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="card mt-6">
+          <div class="card-header"><span class="card-title">🔒 Change Password</span></div>
+          <form id="change-password-form" style="max-width:400px;">
+            <div id="pw-alert"></div>
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input type="password" id="currentPw" class="form-control" placeholder="Enter current password">
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" id="newPw" class="form-control" placeholder="Min. 8 characters">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" id="confirmPw" class="form-control" placeholder="Repeat new password">
+            </div>
+            <button type="submit" class="btn btn-primary" id="changePwBtn">Update Password</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ── Vital Signs Section ─────────────────────────── -->
+      <section class="dash-section" id="section-vitals">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 class="section-title">Vital Signs</h2>
+            <p class="section-subtitle">Track your health metrics over time</p>
+          </div>
+          <button class="btn btn-primary" id="addVitalsBtn">+ Record Vitals</button>
+        </div>
+
+        <div id="vitals-latest"></div>
+
+        <div class="card mt-6">
+          <div class="card-header"><span class="card-title">📈 History</span></div>
+          <div id="vitals-history"><p class="text-muted text-sm">No records yet.</p></div>
+        </div>
+      </section>
+
+      <!-- ── Medications Section ─────────────────────────── -->
+      <section class="dash-section" id="section-medications">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 class="section-title">Current Medications</h2>
+            <p class="section-subtitle">Track your prescriptions and dosages</p>
+          </div>
+          <button class="btn btn-primary" id="addMedicationBtn">+ Add Medication</button>
+        </div>
+        <div id="medications-list">
+          <p class="text-muted text-sm">No medications added.</p>
+        </div>
+      </section>
+
+      <!-- ── Allergies Section ───────────────────────────── -->
+      <section class="dash-section" id="section-allergies">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 class="section-title">Allergies</h2>
+            <p class="section-subtitle">Known allergens and reactions</p>
+          </div>
+          <button class="btn btn-primary" id="addAllergyBtn">+ Add Allergy</button>
+        </div>
+        <div id="allergies-list">
+          <p class="text-muted text-sm">No allergies recorded.</p>
+        </div>
+      </section>
+
+      <!-- ── Medical Records Section ────────────────────── -->
+      <section class="dash-section" id="section-medical-records">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 class="section-title">Medical Records</h2>
+            <p class="section-subtitle">Your complete medical history timeline</p>
+          </div>
+          <button class="btn btn-primary" id="addRecordBtn">+ Add Record</button>
+        </div>
+        <div id="medical-records-timeline">
+          <p class="text-muted text-sm">No records yet.</p>
+        </div>
+      </section>
+
+      <!-- ── Symptom History Section ──────────────────────── -->
+      <section class="dash-section" id="section-symptom-history">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 class="section-title">Symptom Analysis History</h2>
+            <p class="section-subtitle">Your previous AI-powered symptom analyses</p>
+          </div>
+          <a href="analyzer.html" class="btn btn-primary">+ New Analysis</a>
+        </div>
+        <div id="symptom-history-list">
+          <p class="text-muted text-sm">No analyses yet. <a href="analyzer.html">Try the symptom analyzer.</a></p>
+        </div>
+        <div id="symptom-pagination" style="margin-top:20px;display:flex;gap:10px;justify-content:center;"></div>
+      </section>
+
+      <!-- ── Settings Section ───────────────────────────── -->
+      <section class="dash-section" id="section-settings">
+        <div class="section-header">
+          <h2 class="section-title">Account Settings</h2>
+          <p class="section-subtitle">Manage your account preferences</p>
+        </div>
+        <div class="card" style="border-color:var(--danger)">
+          <div class="card-header"><span class="card-title" style="color:var(--danger)">⚠️ Danger Zone</span></div>
+          <p class="text-secondary text-sm mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+          <button class="btn btn-danger" id="deleteAccountBtn">Delete My Account</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ── Modals ──────────────────────────────────────────── -->
+  <!-- Add Vitals Modal -->
+  <div class="modal-overlay hidden" id="vitalsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">❤️ Record Vital Signs</h3>
+        <button class="modal-close" data-close="vitalsModal">×</button>
+      </div>
+      <form id="vitals-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Systolic BP (mmHg)</label>
+            <input type="number" id="v-systolic" class="form-control" placeholder="e.g., 120">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Diastolic BP (mmHg)</label>
+            <input type="number" id="v-diastolic" class="form-control" placeholder="e.g., 80">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Heart Rate (bpm)</label>
+            <input type="number" id="v-heartrate" class="form-control" placeholder="e.g., 72">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Temperature (°F)</label>
+            <input type="number" id="v-temp" class="form-control" step="0.1" placeholder="e.g., 98.6">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Weight (lbs)</label>
+            <input type="number" id="v-weight" class="form-control" step="0.1" placeholder="e.g., 165">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Blood Sugar (mg/dL)</label>
+            <input type="number" id="v-sugar" class="form-control" placeholder="e.g., 95">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Oxygen Saturation (%)</label>
+            <input type="number" id="v-o2" class="form-control" min="0" max="100" placeholder="e.g., 99">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cholesterol (mg/dL)</label>
+            <input type="number" id="v-cholesterol" class="form-control" placeholder="e.g., 180">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Creatinine (mg/dL)</label>
+            <input type="number" id="v-creatinine" class="form-control" step="0.01" placeholder="e.g., 1.0">
+          </div>
+          <div class="form-group"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea id="v-notes" class="form-control" rows="2" placeholder="Any additional notes..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn btn-ghost" data-close="vitalsModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveVitalsBtn">Save Vitals</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Health Vitals Overview Modal -->
+  <div class="modal-overlay hidden" id="healthVitalsModal">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3 class="modal-title">❤️ Health Vitals Overview</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-sm btn-secondary" id="seedVitalsBtn" title="Generate 90 days of sample data">Load Sample Data</button>
+          <button class="modal-close" data-close="healthVitalsModal">×</button>
+        </div>
+      </div>
+      <div id="hvModalBody" style="padding:20px 24px 24px;overflow-y:auto;max-height:80vh;">
+        <p class="text-muted text-sm">No vital signs recorded yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Medication Modal -->
+  <div class="modal-overlay hidden" id="medicationModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">💊 Add Medication</h3>
+        <button class="modal-close" data-close="medicationModal">×</button>
+      </div>
+      <form id="medication-form">
+        <div class="form-group">
+          <label class="form-label">Medication Name <span class="required">*</span></label>
+          <input type="text" id="med-name" class="form-control" placeholder="e.g., Metformin">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Dosage</label>
+            <input type="text" id="med-dosage" class="form-control" placeholder="e.g., 500mg">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Frequency</label>
+            <input type="text" id="med-frequency" class="form-control" placeholder="e.g., Twice daily">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Prescribed By</label>
+            <input type="text" id="med-doctor" class="form-control" placeholder="Doctor's name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" id="med-start" class="form-control">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn btn-ghost" data-close="medicationModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveMedBtn">Add Medication</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Allergy Modal -->
+  <div class="modal-overlay hidden" id="allergyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">⚠️ Add Allergy</h3>
+        <button class="modal-close" data-close="allergyModal">×</button>
+      </div>
+      <form id="allergy-form">
+        <div class="form-group">
+          <label class="form-label">Allergen <span class="required">*</span></label>
+          <input type="text" id="allergy-name" class="form-control" placeholder="e.g., Penicillin, Peanuts">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reaction</label>
+          <input type="text" id="allergy-reaction" class="form-control" placeholder="e.g., Hives, Anaphylaxis">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Severity</label>
+          <select id="allergy-severity" class="form-control">
+            <option value="">Select severity</option>
+            <option value="mild">Mild</option>
+            <option value="moderate">Moderate</option>
+            <option value="severe">Severe</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn btn-ghost" data-close="allergyModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveAllergyBtn">Add Allergy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Medical Record Modal -->
+  <div class="modal-overlay hidden" id="recordModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 Add Medical Record</h3>
+        <button class="modal-close" data-close="recordModal">×</button>
+      </div>
+      <form id="record-form" enctype="multipart/form-data">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Type <span class="required">*</span></label>
+            <select id="record-type" class="form-control">
+              <option value="">Select type</option>
+              <option value="diagnosis">Diagnosis</option>
+              <option value="prescription">Prescription</option>
+              <option value="lab_result">Lab Result</option>
+              <option value="vital_signs">Vital Signs</option>
+              <option value="vaccination">Vaccination</option>
+              <option value="surgery">Surgery</option>
+              <option value="allergy">Allergy</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="record-date" class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title <span class="required">*</span></label>
+          <input type="text" id="record-title" class="form-control" placeholder="e.g., Annual Physical Exam">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="record-desc" class="form-control" rows="3" placeholder="Details, findings, notes..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Doctor / Physician</label>
+            <input type="text" id="record-doctor" class="form-control" placeholder="Dr. Smith">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Facility / Hospital</label>
+            <input type="text" id="record-facility" class="form-control" placeholder="City General Hospital">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Attachment (PDF, DOC, JPG — max 5MB)</label>
+          <input type="file" id="record-file" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button type="button" class="btn btn-ghost" data-close="recordModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveRecordBtn">Save Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

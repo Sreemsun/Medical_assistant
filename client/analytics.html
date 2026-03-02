@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Reading Trends – MedAssist</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/analytics.css" />
+</head>
+<body>
+
+  <!-- Navbar injected by utils.js -->
+  <div id="navbar"></div>
+
+  <main class="an-page">
+    <div class="an-container">
+
+      <!-- ── Page Header ─────────────────────────────────────────── -->
+      <div class="an-header">
+        <div>
+          <h1 class="an-title">Patient Reading Trends</h1>
+          <p class="an-subtitle">
+            768 readings from the Pima Indians Diabetes Dataset grouped into
+            <strong>24 months</strong> (Jan 2023 – Dec 2024). Select which features to display
+            using the toggles below.
+          </p>
+        </div>
+        <span class="dataset-badge">768 Readings · 7 Features</span>
+      </div>
+
+      <!-- ── Loading / Error ──────────────────────────────────────── -->
+      <div id="anLoading" class="an-loading">
+        <div class="an-spinner"></div>
+        <p>Loading readings…</p>
+      </div>
+      <div id="anError" class="an-error" style="display:none;">
+        <p id="anErrorMsg">Failed to load data.</p>
+      </div>
+
+      <!-- ── Main content ──────────────────────────────────────────── -->
+      <div id="anContent" style="display:none;">
+
+        <!-- Summary Cards -->
+        <div class="summary-cards" id="summaryCards"></div>
+
+        <!-- ── Feature Filter ─────────────────────────────────────── -->
+        <div class="filter-section">
+          <div class="filter-label">
+            <span>Show features</span>
+            <span class="filter-hint">Click to toggle · at least one must remain active</span>
+          </div>
+          <div class="feature-filter" id="featureFilter">
+            <!-- Chips injected by JS -->
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="outcome-legend">
+          <span class="leg-dot leg-diabetic"></span> Diabetic reading
+          <span class="leg-dot leg-healthy" style="margin-left:16px;"></span> Non-diabetic reading
+          <span style="margin-left:16px;color:var(--text-muted);font-weight:400">— — dashed lines in individual charts</span>
+        </div>
+
+        <!-- ── Combined normalised overview ─────────────────────── -->
+        <div class="chart-card chart-card-full">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">All Features — Normalised Trend</h3>
+            <span class="chart-card-sub">Each feature scaled 0–1 so they can be overlaid. Hover to inspect values.</span>
+          </div>
+          <div class="chart-wrap chart-wrap-lg">
+            <canvas id="chartOverview"></canvas>
+          </div>
+        </div>
+
+        <!-- ── Individual feature scatter charts ──────────────────── -->
+        <h2 class="section-title">Monthly Trends by Feature</h2>
+        <p class="section-sub">Monthly average for each selected feature. Solid line = all readings · <span style="color:#ef4444;font-weight:600;">dashed red</span> = diabetic avg · <span style="color:#10b981;font-weight:600;">dashed green</span> = non-diabetic avg.</p>
+        <div class="trends-grid" id="trendsGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- ── Descriptive Statistics ──────────────────────────────── -->
+        <h2 class="section-title" style="margin-top:40px;">Descriptive Statistics</h2>
+        <div class="stats-table-wrap">
+          <table class="stats-table" id="statsTable">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Group</th>
+                <th>Mean</th>
+                <th>Median</th>
+                <th>Std Dev</th>
+                <th>Min</th>
+                <th>Max</th>
+              </tr>
+            </thead>
+            <tbody id="statsBody"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /#anContent -->
+    </div>
+  </main>
+
+  <!-- Footer injected by utils.js -->
+  <div id="footer"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/analytics.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
+const morgan = require('morgan');
+const path = require('path');
+const logger = require('./utils/logger');
+
+// Route imports
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+const symptomRoutes = require('./routes/symptoms');
+const appointmentRoutes = require('./routes/appointments');
+const analyticsRoutes   = require('./routes/analytics');
+
+const app = express();
+
+// ─── Security Middleware ────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com", "cdnjs.cloudflare.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+    },
+  },
+}));
+
+// Global rate limiting
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200,
+  message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(globalLimiter);
+
+// ─── General Middleware ─────────────────────────────────────────────────────
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(mongoSanitize()); // Prevent NoSQL injection
+app.use(morgan('combined', { stream: { write: msg => logger.info(msg.trim()) } }));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ─── API Routes ─────────────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/symptoms', symptomRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/analytics',   analyticsRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, message: 'MedAssist API is running', timestamp: new Date().toISOString() });
+});
+
+// ─── Global Error Handler ───────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  logger.error(`${err.statusCode || 500} - ${err.message} - ${req.originalUrl} - ${req.method}`);
+
+  const isDev = process.env.NODE_ENV === 'development';
+  res.status(err.statusCode || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    ...(isDev && { stack: err.stack }),
+  });
+});
+
+// ─── Database & Server Start ─────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+
+mongoose
+  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medical_assistance')
+  .then(() => {
+    logger.info('MongoDB connected successfully');
+    app.listen(PORT, () => {
+      logger.info(`MedAssist server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+    });
+  })
+  .catch(err => {
+    logger.error('MongoDB connection error:', err.message);
+    process.exit(1);
+  });
+
+module.exports = app;

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedAssist — Your Trusted Medical Companion</title>
+  <meta name="description" content="MedAssist helps you track your health, analyze symptoms with AI, and manage your complete medical history securely.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    /* ── Hero ────────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(140deg, #060d2e 0%, #0f1f5c 30%, #1e3a8a 55%, #2563eb 75%, #7c3aed 100%);
+      color: white;
+      padding: 88px 0 108px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      right: -8%;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 65%);
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -35%;
+      left: -3%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 65%);
+      border-radius: 50%;
+    }
+    /* subtle grid pattern */
+    .hero-grid-pattern {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 9999px;
+      padding: 7px 18px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .hero-badge-dot {
+      width: 6px;
+      height: 6px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(74,222,128,0.3);
+      animation: pulse 2s infinite;
+    }
+    .hero-title {
+      font-size: clamp(2.1rem, 4vw, 3.25rem);
+      font-weight: 900;
+      line-height: 1.12;
+      margin-bottom: 22px;
+      letter-spacing: -0.03em;
+    }
+    .hero-title .highlight {
+      background: linear-gradient(135deg, #93c5fd 0%, #c4b5fd 50%, #f9a8d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle {
+      font-size: 1.075rem;
+      opacity: 0.82;
+      line-height: 1.75;
+      margin-bottom: 38px;
+      max-width: 500px;
+    }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .hero-btn-primary {
+      background: white;
+      color: #1d4ed8;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.975rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .hero-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.22); color: #1d4ed8; }
+    .hero-btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.975rem;
+      text-decoration: none;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      transition: all 0.2s;
+      backdrop-filter: blur(8px);
+    }
+    .hero-btn-secondary:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.5); color: white; transform: translateY(-1px); }
+
+    .hero-stats {
+      display: flex;
+      gap: 36px;
+      margin-top: 44px;
+      padding-top: 36px;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+    .hero-stat-num { font-size: 1.75rem; font-weight: 900; letter-spacing: -0.02em; }
+    .hero-stat-label { font-size: 0.775rem; opacity: 0.65; margin-top: 3px; font-weight: 500; }
+
+    /* Hero visual */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .hero-card-stack {
+      position: relative;
+      width: 360px;
+      height: 420px;
+    }
+    .hero-card {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 22px;
+      backdrop-filter: blur(20px);
+      position: absolute;
+    }
+    .hero-card-main { width: 100%; top: 0; left: 0; z-index: 3; }
+    .hero-card-back1 { width: 90%; top: 22px; left: 5%; z-index: 2; opacity: 0.6; height: 80px; }
+    .hero-card-back2 { width: 80%; top: 38px; left: 10%; z-index: 1; opacity: 0.3; height: 80px; }
+    .hc-label { font-size: 0.68rem; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+    .hc-value { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.01em; }
+    .hc-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .hc-metric {
+      background: rgba(255,255,255,0.1);
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .hc-metric-val { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; }
+    .hc-metric-label { font-size: 0.68rem; opacity: 0.65; margin-top: 3px; }
+    .hc-ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124,58,237,0.25);
+      border: 1px solid rgba(167,139,250,0.35);
+      border-radius: 9999px;
+      padding: 5px 14px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-top: 14px;
+    }
+    .hc-ai-dot {
+      width: 6px; height: 6px;
+      background: #a78bfa;
+      border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+    .hero-floating-cards {
+      position: absolute;
+      right: -24px;
+      bottom: 50px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 4;
+    }
+    .hero-mini-card {
+      background: white;
+      color: #0f172a;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.775rem;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      animation: fadeInUp 0.5s ease;
+    }
+    .hero-mini-card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Features ────────────────────────────────────────────── */
+    .features { padding: 96px 0; background: var(--bg-secondary); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 52px;
+    }
+    .feature-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--primary-gradient);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .feature-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 18px;
+    }
+    .feature-title { font-size: 1.0625rem; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); letter-spacing: -0.01em; }
+    .feature-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ── How it works ────────────────────────────────────────── */
+    .how-it-works { padding: 96px 0; background: var(--bg-primary); }
+    .steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 52px; position: relative; }
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 23px;
+      left: calc(12.5% + 24px);
+      right: calc(12.5% + 24px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary-light), var(--primary), var(--secondary), var(--primary-light));
+      z-index: 0;
+    }
+    .step-card { text-align: center; position: relative; z-index: 1; }
+    .step-num {
+      width: 48px;
+      height: 48px;
+      background: var(--primary-gradient);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1rem;
+      margin: 0 auto 20px;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+      border: 3px solid var(--bg-primary);
+    }
+    .step-title { font-weight: 700; margin-bottom: 10px; font-size: 0.975rem; letter-spacing: -0.01em; }
+    .step-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.65; }
+
+    /* ── CTA ─────────────────────────────────────────────────── */
+    .cta {
+      padding: 96px 0;
+      background: linear-gradient(140deg, #060d2e 0%, #1e3a8a 40%, #2563eb 70%, #7c3aed 100%);
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+    .cta > .container { position: relative; z-index: 1; }
+    .cta-title { font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 900; margin-bottom: 16px; letter-spacing: -0.025em; }
+    .cta-subtitle { opacity: 0.8; font-size: 1.1rem; margin-bottom: 40px; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+    .cta-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .cta-disclaimer { margin-top: 28px; font-size: 0.775rem; opacity: 0.5; }
+
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; text-align: center; }
+      .hero-subtitle { max-width: 100%; }
+      .hero-actions { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .hero-visual { display: none; }
+      .steps-grid { grid-template-columns: 1fr 1fr; }
+      .steps-grid::before { display: none; }
+    }
+    @media (max-width: 600px) {
+      .hero { padding: 52px 0 72px; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .hero-stats { gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-grid-pattern"></div>
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          AI-Powered Health Platform
+        </div>
+        <h1 class="hero-title">
+          Your Personal<br>
+          <span class="highlight">Medical Assistant</span><br>
+          Powered by AI
+        </h1>
+        <p class="hero-subtitle">
+          Analyze symptoms instantly, track your complete medical history, monitor vital signs, and get intelligent health insights — all secured in one private dashboard.
+        </p>
+        <div class="hero-actions">
+          <a href="register.html" class="hero-btn-primary">🚀 Get Started Free</a>
+          <a href="login.html" class="hero-btn-secondary">Sign In →</a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-num">AI</div>
+            <div class="hero-stat-label">Symptom Analysis</div>
+          </div>
+          <div>
+            <div class="hero-stat-num">256-bit</div>
+            <div class="hero-stat-label">Encryption</div>
+          </div>
+          <div>
+            <div class="hero-stat-num">24/7</div>
+            <div class="hero-stat-label">Available</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-card-stack">
+          <div class="hero-card hero-card-back2"></div>
+          <div class="hero-card hero-card-back1"></div>
+          <div class="hero-card hero-card-main">
+            <div class="hc-label">Patient Overview</div>
+            <div class="hc-value">John Doe, 35</div>
+            <div class="hc-metrics">
+              <div class="hc-metric">
+                <div class="hc-metric-val">120/80</div>
+                <div class="hc-metric-label">Blood Pressure</div>
+              </div>
+              <div class="hc-metric">
+                <div class="hc-metric-val">98.6°F</div>
+                <div class="hc-metric-label">Temperature</div>
+              </div>
+              <div class="hc-metric">
+                <div class="hc-metric-val">72 bpm</div>
+                <div class="hc-metric-label">Heart Rate</div>
+              </div>
+              <div class="hc-metric">
+                <div class="hc-metric-val">99%</div>
+                <div class="hc-metric-label">SpO2</div>
+              </div>
+            </div>
+            <div class="hc-ai-badge">
+              <span class="hc-ai-dot"></span>
+              AI Analysis Active
+            </div>
+          </div>
+          <div class="hero-floating-cards">
+            <div class="hero-mini-card">
+              <span class="hero-mini-card-dot" style="background:#4ade80"></span>
+              Low severity detected
+            </div>
+            <div class="hero-mini-card">
+              <span class="hero-mini-card-dot" style="background:#60a5fa"></span>
+              3 medications tracked
+            </div>
+            <div class="hero-mini-card">
+              <span class="hero-mini-card-dot" style="background:#f59e0b"></span>
+              Last checkup: 2 weeks ago
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="container">
+      <div class="section-header text-center">
+        <h2 class="section-title">Everything You Need for Your Health</h2>
+        <p class="section-subtitle">Comprehensive tools to take control of your medical information</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#dbeafe;">🤖</div>
+          <h3 class="feature-title">AI Symptom Analyzer</h3>
+          <p class="feature-desc">Describe your symptoms and get instant AI-powered analysis with potential conditions, severity ratings, and recommended actions.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#dcfce7;">📋</div>
+          <h3 class="feature-title">Medical History Timeline</h3>
+          <p class="feature-desc">Keep a complete chronological record of diagnoses, prescriptions, lab results, and medical events with document attachments.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#fce7f3;">❤️</div>
+          <h3 class="feature-title">Vital Signs Tracking</h3>
+          <p class="feature-desc">Log and monitor blood pressure, heart rate, temperature, weight, cholesterol, blood sugar, and oxygen saturation over time.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#ede9fe;">💊</div>
+          <h3 class="feature-title">Medications & Allergies</h3>
+          <p class="feature-desc">Manage your current medications, dosages, and known allergies. Get a clear view of your treatment plan at a glance.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#fef3c7;">🔒</div>
+          <h3 class="feature-title">Secure & Private</h3>
+          <p class="feature-desc">Your health data is encrypted and protected with JWT authentication, bcrypt password hashing, and secure storage.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#cffafe;">📱</div>
+          <h3 class="feature-title">Responsive Design</h3>
+          <p class="feature-desc">Access your health dashboard on any device — desktop, tablet, or phone — with a seamless, optimized experience.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works">
+    <div class="container">
+      <div class="section-header text-center">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">Get started in minutes — no technical knowledge required</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h4 class="step-title">Create Account</h4>
+          <p class="step-desc">Register with your email and complete your basic health profile with medical history.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h4 class="step-title">Set Up Dashboard</h4>
+          <p class="step-desc">Add your medications, allergies, vital signs, and any existing medical records.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h4 class="step-title">Analyze Symptoms</h4>
+          <p class="step-desc">Describe symptoms to get AI-powered analysis with potential conditions and recommended actions.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <h4 class="step-title">Track Over Time</h4>
+          <p class="step-desc">Build a comprehensive health timeline and monitor trends in your vital signs and symptoms.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="container">
+      <h2 class="cta-title">Take Control of Your Health Today</h2>
+      <p class="cta-subtitle">Join MedAssist to manage your health data intelligently, securely, and with the power of AI.</p>
+      <div class="cta-actions">
+        <a href="register.html" class="hero-btn-primary">🚀 Get Started — It's Free</a>
+        <a href="login.html" class="hero-btn-secondary">Already have an account?</a>
+      </div>
+      <p class="cta-disclaimer">⚠️ For informational purposes only. Not a substitute for professional medical advice.</p>
+    </div>
+  </section>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/utils.js"></script>
+  <script>
+    document.getElementById('navbar-placeholder').innerHTML = buildNavbar('home');
+    document.getElementById('footer-placeholder').innerHTML = buildFooter();
+    Auth.redirectIfLoggedIn();
+  </script>
+</body>
+</html>
