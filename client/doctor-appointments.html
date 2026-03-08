@@ -49,6 +49,44 @@
       <!-- Appointments grid -->
       <div id="daGrid" class="da-grid"></div>
 
+      <!-- ── Patient Messages ────────────────────────────────── -->
+      <div class="da-msgs-section" id="da-msgs-section">
+        <div class="da-msgs-header">
+          <div class="da-msgs-icon">💬</div>
+          <div>
+            <h2 class="da-msgs-title">Patient Messages</h2>
+            <p class="da-msgs-subtitle">Read and reply to messages sent by your patients</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="da-msgs-refresh-btn" style="margin-left:auto">Refresh</button>
+        </div>
+
+        <!-- Conversation list -->
+        <div id="da-convs-wrapper">
+          <div id="da-convs-loading" class="da-msgs-loading">Loading messages…</div>
+          <div id="da-convs-list"></div>
+        </div>
+
+        <!-- Active thread -->
+        <div id="da-thread-wrapper" class="hidden">
+          <div class="da-thread-header">
+            <button class="btn btn-ghost btn-sm" id="da-thread-back-btn">← Back</button>
+            <span class="da-thread-title" id="da-thread-title">Conversation</span>
+            <button class="btn btn-ghost btn-sm" id="da-thread-refresh-btn">Refresh</button>
+          </div>
+          <div class="da-thread" id="da-thread"></div>
+          <div class="da-reply-box">
+            <textarea
+              id="da-reply-content"
+              class="form-control"
+              rows="2"
+              placeholder="Type your reply to the patient…"
+              maxlength="2000"
+            ></textarea>
+            <button class="btn btn-primary btn-sm" id="da-reply-send-btn">Send Reply</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 

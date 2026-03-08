@@ -54,6 +54,36 @@ const FEAT_COLORS  = [
 // ── Feature selection state ────────────────────────────────────
 let selectedFeatures = new Set(); // filled after data loads
 
+// ── Selected trend feature (single-chart selector) ────────────
+let selectedTrendFeature = null;
+
+// ── Selected overview feature (explicit selector — no auto-render) ──
+let selectedOverviewFeature = null;
+
+// ── Display helpers: Jan 2024 – Feb 2025 (14 months) + Mar 2025 current ──
+// 14 historical labels: Jan 2024 … Feb 2025
+function getHistoricalLabels() {
+  return Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(2024, i); // i=12 → Jan 2025, i=13 → Feb 2025
+    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  });
+}
+
+// Full 15-label set for charts: 14 historical + "Mar '25" (current reading slot)
+function getChartLabels() {
+  return [...getHistoricalLabels(), "Mar '25"];
+}
+
+// 14-month overall slice: raw months 12–23 + 2 synthetic values (Jan/Feb 2025)
+function getHistoricalSlice(monthlyArr, synth) {
+  return [...monthlyArr.slice(12, 24), ...synth];
+}
+
+// 14-month outcome-split slice: raw months 12–23 + nulls (no outcome split for synthetic months)
+function getOutcomeSlice(monthlyArr) {
+  return [...monthlyArr.slice(12, 24), null, null];
+}
+
 // ── Chart instance cache ───────────────────────────────────────
 const _charts = {};
 function makeChart(id, type, data, options = {}) {
@@ -88,7 +118,222 @@ function scaleOpts(t) {
 const LS_READING_KEY = 'medassist_analytics_reading';
 let userReadings = JSON.parse(localStorage.getItem(LS_READING_KEY) || '{}');
 
-// ── Collapsible reading panel toggle ──────────────────────────
+// ── Clinical reference thresholds ─────────────────────────────
+const THRESHOLDS = {
+  Glucose: {
+    ranges: [
+      { level: 'normal', max: 99,  text: 'Normal fasting glucose (< 100 mg/dL)' },
+      { level: 'medium', min: 100, max: 125, text: 'Pre-diabetic range (100–125 mg/dL)' },
+      { level: 'severe', min: 126, text: 'Diabetic range (≥ 126 mg/dL)' },
+    ],
+    advice: {
+      normal: 'Your blood glucose is within the healthy range.',
+      medium: 'Your blood glucose indicates pre-diabetes. Consider dietary changes and consult a healthcare provider.',
+      severe: 'Your blood glucose is in the diabetic range. Immediate medical consultation is recommended.',
+    },
+  },
+  BloodPressure: {
+    ranges: [
+      { level: 'normal', max: 79, text: 'Normal diastolic BP (< 80 mmHg)' },
+      { level: 'medium', min: 80, max: 89, text: 'Elevated diastolic BP (80–89 mmHg)' },
+      { level: 'severe', min: 90, text: 'High blood pressure (≥ 90 mmHg)' },
+    ],
+    advice: {
+      normal: 'Your diastolic blood pressure is normal.',
+      medium: 'Your blood pressure is elevated. Monitor regularly and reduce sodium intake.',
+      severe: 'Your blood pressure is high. Consult a healthcare provider promptly.',
+    },
+  },
+  SkinThickness: {
+    ranges: [
+      { level: 'normal', max: 23, text: 'Normal skin fold thickness (≤ 23 mm)' },
+      { level: 'medium', min: 24, max: 35, text: 'Slightly elevated skin thickness (24–35 mm)' },
+      { level: 'severe', min: 36, text: 'High skin fold thickness (> 35 mm)' },
+    ],
+    advice: {
+      normal: 'Your skin thickness is within the normal range.',
+      medium: 'Your skin thickness is slightly above average, which may indicate higher body fat.',
+      severe: 'Your skin thickness is significantly elevated, correlating with higher body fat levels.',
+    },
+  },
+  Insulin: {
+    ranges: [
+      { level: 'normal', max: 166, text: 'Normal 2-hr serum insulin (≤ 166 μU/mL)' },
+      { level: 'medium', min: 167, max: 250, text: 'Elevated insulin (167–250 μU/mL)' },
+      { level: 'severe', min: 251, text: 'High insulin levels (> 250 μU/mL)' },
+    ],
+    advice: {
+      normal: 'Your insulin level is within the normal range.',
+      medium: 'Your insulin level is elevated, which may indicate insulin resistance.',
+      severe: 'Your insulin level is significantly high, suggesting severe insulin resistance.',
+    },
+  },
+  BMI: {
+    ranges: [
+      { level: 'normal', max: 24.9, text: 'Healthy weight (BMI < 25)' },
+      { level: 'medium', min: 25,   max: 29.9, text: 'Overweight (BMI 25–29.9)' },
+      { level: 'severe', min: 30,   text: 'Obese (BMI ≥ 30)' },
+    ],
+    advice: {
+      normal: 'Your BMI is in the healthy range.',
+      medium: 'Your BMI indicates you are overweight. Regular exercise and a balanced diet are recommended.',
+      severe: 'Your BMI indicates obesity, which significantly increases diabetes risk.',
+    },
+  },
+  DiabetesPedigreeFunction: {
+    ranges: [
+      { level: 'normal', max: 0.4,  text: 'Low genetic risk (≤ 0.4)' },
+      { level: 'medium', min: 0.41, max: 0.7, text: 'Moderate genetic risk (0.41–0.7)' },
+      { level: 'severe', min: 0.71, text: 'High genetic risk (> 0.7)' },
+    ],
+    advice: {
+      normal: 'Your diabetes pedigree score indicates low hereditary risk.',
+      medium: 'Your diabetes pedigree score indicates moderate hereditary risk. Regular screening is advised.',
+      severe: 'Your diabetes pedigree score indicates high hereditary risk. Consult a healthcare provider.',
+    },
+  },
+};
+
+function classifyReading(key, val) {
+  const t = THRESHOLDS[key];
+  if (!t) return null;
+  for (const r of t.ranges) {
+    const aboveMin = r.min === undefined || val >= r.min;
+    const belowMax = r.max === undefined || val <= r.max;
+    if (aboveMin && belowMax) return { level: r.level, text: r.text };
+  }
+  return null;
+}
+
+function compareToDataset(key, val, stats) {
+  const s = stats[key];
+  if (!s) return null;
+  const healthyMean  = parseFloat(s.healthy.mean);
+  const diabeticMean = parseFloat(s.diabetic.mean);
+  const closer = Math.abs(val - healthyMean) <= Math.abs(val - diabeticMean) ? 'healthy' : 'diabetic';
+  return { healthyMean, diabeticMean, closer };
+}
+
+function renderReadingAlerts(readings, data) {
+  const section = document.getElementById('readingAlerts');
+  if (!Object.keys(readings).length) { section.style.display = 'none'; return; }
+
+  const LEVEL = {
+    normal: { color: '#10b981', bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.3)',  badge: 'Normal',   icon: '✓' },
+    medium: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.3)',  badge: 'Moderate', icon: '⚠' },
+    severe: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.3)',   badge: 'Severe',   icon: '✕' },
+  };
+
+  const results = [];
+  data.columns.forEach(col => {
+    const val = readings[col.key];
+    if (val === undefined) return;
+    const classification = classifyReading(col.key, val);
+    const comparison     = compareToDataset(col.key, val, data.stats);
+    if (classification) results.push({ col, val, classification, comparison });
+  });
+
+  const severeCount = results.filter(r => r.classification.level === 'severe').length;
+  const mediumCount = results.filter(r => r.classification.level === 'medium').length;
+
+  let summaryColor = '#10b981';
+  let summaryText  = 'All entered values are within normal ranges.';
+  if (severeCount > 0) {
+    summaryColor = '#ef4444';
+    summaryText  = `${severeCount} value${severeCount > 1 ? 's' : ''} in the severe range — consult a healthcare provider.`;
+  } else if (mediumCount > 0) {
+    summaryColor = '#f59e0b';
+    summaryText  = `${mediumCount} value${mediumCount > 1 ? 's' : ''} in the moderate range — consider scheduling a check-up.`;
+  }
+
+  const cards = results.map(({ col, val, classification, comparison }) => {
+    const cfg    = LEVEL[classification.level];
+    const advice = THRESHOLDS[col.key]?.advice?.[classification.level] || '';
+
+    const compHTML = comparison ? `
+      <div class="ra-comparison">
+        <span>Dataset avg — Non-diabetic: <strong>${comparison.healthyMean}</strong> · Diabetic: <strong>${comparison.diabeticMean}</strong> ${col.unit}</span>
+        <span class="ra-closer" style="color:${comparison.closer === 'healthy' ? '#10b981' : '#ef4444'}">
+          Closer to ${comparison.closer === 'healthy' ? 'non-diabetic' : 'diabetic'} average
+        </span>
+      </div>` : '';
+
+    return `
+      <div class="ra-card" style="border-color:${cfg.border};background:${cfg.bg}">
+        <div class="ra-card-top">
+          <div class="ra-feature">
+            <span class="ra-feature-name">${col.label}</span>
+            <span class="ra-feature-val" style="color:${cfg.color}">${val}${col.unit ? ' ' + col.unit : ''}</span>
+          </div>
+          <span class="ra-badge" style="background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border}">
+            ${cfg.icon} ${cfg.badge}
+          </span>
+        </div>
+        <p class="ra-range-text">${classification.text}</p>
+        <p class="ra-advice">${advice}</p>
+        ${compHTML}
+      </div>`;
+  }).join('');
+
+  section.innerHTML = `
+    <div class="ra-header">
+      <h3 class="ra-title">Health Reading Analysis</h3>
+      <p class="ra-summary" style="color:${summaryColor}">${summaryText}</p>
+    </div>
+    <p class="ra-disclaimer">For informational purposes only — not a substitute for professional medical advice.</p>
+    <div class="ra-grid">${cards}</div>`;
+  section.style.display = 'block';
+
+  // Show doctor popup if any values are severe or moderate
+  if (severeCount > 0 || mediumCount > 0) showDoctorModal(results);
+}
+
+// ── Doctor consultation modal ──────────────────────────────────
+function initDoctorModal() {
+  const overlay = document.getElementById('doctorModal');
+  const dismiss = document.getElementById('doctorModalDismiss');
+  if (!overlay || !dismiss) return;
+
+  dismiss.addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDoctorModal);
+} else {
+  initDoctorModal();
+}
+
+function showDoctorModal(results) {
+  const severeItems = results.filter(r => r.classification.level === 'severe');
+  const mediumItems = results.filter(r => r.classification.level === 'medium');
+  const isSevere    = severeItems.length > 0;
+
+  const iconWrap = document.getElementById('doctorModalIconWrap');
+  const title    = document.getElementById('doctorModalTitle');
+  const body     = document.getElementById('doctorModalBody');
+  const flags    = document.getElementById('doctorModalFlags');
+
+  iconWrap.className = `dm-icon-wrap ${isSevere ? 'severe' : 'medium'}`;
+
+  if (isSevere) {
+    title.textContent = 'Medical Attention Recommended';
+    body.textContent  = 'One or more of your readings fall in the severe range. We strongly recommend consulting a healthcare provider as soon as possible.';
+  } else {
+    title.textContent = 'Consider a Health Check-Up';
+    body.textContent  = 'Some of your readings are elevated. While not immediately critical, scheduling a check-up with your doctor is advisable.';
+  }
+
+  const allFlagged = [...severeItems, ...mediumItems];
+  flags.innerHTML = allFlagged.map(({ col, val, classification }) => `
+    <li class="dm-flag-item ${classification.level}">
+      <span>${classification.level === 'severe' ? '✕' : '⚠'}</span>
+      <span>${col.label}: <strong>${val}${col.unit ? ' ' + col.unit : ''}</strong> — ${classification.text}</span>
+    </li>`).join('');
+
+  document.getElementById('doctorModal').classList.add('open');
+}
 document.getElementById('readingToggle').addEventListener('click', () => {
   const body  = document.getElementById('readingBody');
   const arrow = document.getElementById('readingArrow');
@@ -123,17 +368,30 @@ document.getElementById('plotReadingBtn').addEventListener('click', () => {
   const readings = {};
   _cachedData.columns.forEach(col => {
     const val = parseFloat(document.getElementById(`ri_${col.key}`)?.value);
-    if (!isNaN(val) && val > 0) readings[col.key] = +val.toFixed(2);
+    if (!isNaN(val) && val >= 0) readings[col.key] = +val.toFixed(2);
   });
   userReadings = readings;
   localStorage.setItem(LS_READING_KEY, JSON.stringify(userReadings));
   refreshCharts(_cachedData);
+  renderReadingAlerts(readings, _cachedData);
+
+  const count = Object.keys(readings).length;
+  const fb = document.getElementById('readingFeedback');
+  fb.textContent = count > 0
+    ? `Your reading plotted as a highlighted dot at Mar '25 on ${count} chart${count > 1 ? 's' : ''}.`
+    : 'No valid values entered. Please fill in at least one field.';
+  fb.style.color = count > 0 ? '#10b981' : '#f59e0b';
+  fb.style.display = 'block';
+  clearTimeout(fb._hideTimer);
+  fb._hideTimer = setTimeout(() => { fb.style.display = 'none'; }, 4000);
 });
 
 // ── Clear button ───────────────────────────────────────────────
 document.getElementById('clearReadingBtn').addEventListener('click', () => {
   userReadings = {};
   localStorage.removeItem(LS_READING_KEY);
+  document.getElementById('readingAlerts').style.display = 'none';
+  document.getElementById('readingFeedback').style.display = 'none';
   if (_cachedData) {
     _cachedData.columns.forEach(col => {
       const el = document.getElementById(`ri_${col.key}`);
@@ -202,230 +460,352 @@ function renderFeatureFilter(data) {
   });
 }
 
-// ── Overview: normalised monthly multi-line ────────────────────
+// ── Overview chart: explicit feature selector (no auto-render) ─
 function renderOverview(data) {
-  const t      = theme();
-  const labels = makeMonthLabels();
+  const selectorWrap = document.getElementById('overviewSelectorWrap');
+  const emptyState   = document.getElementById('overviewEmptyState');
+  const chartArea    = document.getElementById('overviewChartArea');
+
   const activeCols = data.columns.filter(c => selectedFeatures.has(c.key));
 
-  const datasets = activeCols.map((col, ci) => {
-    const zeroOK = col.key === 'Age' || col.key === 'DiabetesPedigreeFunction';
-    const monthly = groupByMonth(data.series[col.key], zeroOK);
-    const valid   = monthly.filter(v => v !== null);
-    const mn      = Math.min(...valid);
-    const mx      = Math.max(...valid);
-    const range   = mx - mn || 1;
-    const norm    = monthly.map(v => v === null ? null : +((v - mn) / range).toFixed(3));
+  // Validate selectedOverviewFeature against current active features
+  if (selectedOverviewFeature && !activeCols.find(c => c.key === selectedOverviewFeature)) {
+    selectedOverviewFeature = null;
+  }
 
-    const globalIdx = data.columns.findIndex(c => c.key === col.key);
-    const color = FEAT_COLORS[globalIdx % FEAT_COLORS.length];
+  // Build selector buttons
+  selectorWrap.innerHTML = `
+    <span class="trend-selector-label">Select feature</span>
+    <div class="trend-sel-btns" id="overviewSelBtns">
+      ${activeCols.map(col => {
+        const gi    = data.columns.findIndex(c => c.key === col.key);
+        const color = FEAT_COLORS[gi % FEAT_COLORS.length];
+        return `<button
+          class="trend-sel-btn ${col.key === selectedOverviewFeature ? 'active' : ''}"
+          data-key="${col.key}"
+          style="--sel-color:${color}"
+        >${col.label}</button>`;
+      }).join('')}
+    </div>
+  `;
 
-    return {
-      label: col.label,
-      data: norm,
-      borderColor: color,
-      backgroundColor: 'transparent',
-      borderWidth: 2,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      tension: 0.35,
-      spanGaps: true,
-    };
+  selectorWrap.querySelectorAll('.trend-sel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedOverviewFeature = btn.dataset.key;
+      selectorWrap.querySelectorAll('.trend-sel-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderOverviewChart(data);
+    });
   });
 
-  makeChart('chartOverview', 'line', { labels, datasets }, {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 300 },
-    plugins: {
-      legend: {
-        labels: {
-          color: t.legend, font: { size: 12 },
-          boxWidth: 20, padding: 16,
-          usePointStyle: true, pointStyle: 'circle',
+  if (selectedOverviewFeature) {
+    emptyState.classList.add('hidden');
+    chartArea.classList.remove('hidden');
+    renderOverviewChart(data);
+  } else {
+    emptyState.classList.remove('hidden');
+    chartArea.classList.add('hidden');
+  }
+}
+
+// ── Render overview chart for the selected feature ─────────────
+function renderOverviewChart(data) {
+  const emptyState = document.getElementById('overviewEmptyState');
+  const chartArea  = document.getElementById('overviewChartArea');
+  const statsEl    = document.getElementById('overviewStats');
+
+  const col = data.columns.find(c => c.key === selectedOverviewFeature);
+  if (!col) return;
+
+  emptyState.classList.add('hidden');
+  chartArea.classList.remove('hidden');
+
+  const s         = data.stats[col.key];
+  const zeroOK    = col.key === 'DiabetesPedigreeFunction';
+  const globalIdx = data.columns.findIndex(c => c.key === col.key);
+  const color     = FEAT_COLORS[globalIdx % FEAT_COLORS.length];
+
+  statsEl.innerHTML = `
+    <span class="trend-stat"><strong>${col.label}</strong> <span style="color:var(--text-muted);font-weight:400">${col.unit}</span></span>
+    <span class="trend-stat"><strong>Overall mean</strong> ${s.overall.mean}</span>
+    <span class="trend-stat" style="color:${COL_DIABETIC};font-weight:600">Diabetic avg ${s.diabetic.mean}</span>
+    <span class="trend-stat" style="color:${COL_HEALTHY};font-weight:600">Non-diabetic avg ${s.healthy.mean}</span>
+  `;
+
+  requestAnimationFrame(() => {
+    const t      = theme();
+    const labels = getChartLabels();
+
+    const overallMonthly  = getHistoricalSlice(groupByMonth(data.series[col.key], zeroOK), data.syntheticMonthlyAvgs[col.key]);
+    const diabeticVals    = data.series[col.key].map((v, i) => data.outcomeArr[i] === 1 ? v : null);
+    const healthyVals     = data.series[col.key].map((v, i) => data.outcomeArr[i] === 0 ? v : null);
+    const diabeticMonthly = getOutcomeSlice(groupByMonthNullable(diabeticVals, zeroOK));
+    const healthyMonthly  = getOutcomeSlice(groupByMonthNullable(healthyVals, zeroOK));
+
+    const datasets = [
+      {
+        label: 'Overall',
+        data: [...overallMonthly, null],
+        borderColor: color,
+        backgroundColor: color + '20',
+        fill: true,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.35,
+        spanGaps: true,
+      },
+      {
+        label: 'Diabetic avg',
+        data: [...diabeticMonthly, null],
+        borderColor: COL_DIABETIC,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 3],
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.35,
+        spanGaps: true,
+      },
+      {
+        label: 'Non-diabetic avg',
+        data: [...healthyMonthly, null],
+        borderColor: COL_HEALTHY,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 3],
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.35,
+        spanGaps: true,
+      },
+    ];
+
+    if (userReadings[col.key] !== undefined) {
+      const refVal = userReadings[col.key];
+      datasets.push({
+        label: `Mar '25 Reading (${refVal} ${col.unit})`,
+        data: [...Array(14).fill(null), refVal],
+        borderColor: '#f59e0b',
+        backgroundColor: '#f59e0b',
+        borderWidth: 0,
+        pointRadius: [...Array(14).fill(0), 10],
+        pointHoverRadius: [...Array(14).fill(0), 12],
+        pointBackgroundColor: '#f59e0b',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2.5,
+        spanGaps: false,
+      });
+    }
+
+    makeChart('chartOverview', 'line', { labels, datasets }, {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: {
+        legend: {
+          labels: {
+            color: t.legend, font: { size: 12 },
+            boxWidth: 14, padding: 12,
+            usePointStyle: true, pointStyle: 'circle',
+          },
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: t.tipBg,
+          titleColor: t.tipText,
+          bodyColor: t.tipText,
+          borderColor: t.tipBorder,
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ctx.raw !== null
+              ? ` ${ctx.dataset.label}: ${ctx.raw}`
+              : null,
+          },
         },
       },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-        backgroundColor: t.tipBg,
-        titleColor: t.tipText,
-        bodyColor: t.tipText,
-        borderColor: t.tipBorder,
-        borderWidth: 1,
-        callbacks: {
-          label: ctx => ctx.raw !== null
-            ? ` ${ctx.dataset.label}: ${ctx.raw.toFixed(2)} (normalised)`
-            : ` ${ctx.dataset.label}: no data`,
+      scales: {
+        x: {
+          ...scaleOpts(t),
+          ticks: { ...scaleOpts(t).ticks, maxRotation: 30 },
         },
+        y: { ...scaleOpts(t), beginAtZero: false, spanGaps: true },
       },
-    },
-    scales: {
-      x: {
-        ...scaleOpts(t),
-        ticks: { ...scaleOpts(t).ticks, maxRotation: 45, maxTicksLimit: 12 },
-      },
-      y: {
-        ...scaleOpts(t),
-        min: 0, max: 1,
-        ticks: { ...scaleOpts(t).ticks, callback: v => v.toFixed(1) },
-        title: { display: true, text: 'Normalised value (0–1)', color: t.tick, font: { size: 11 } },
-      },
-    },
+    });
   });
 }
 
-// ── Individual monthly trend charts ───────────────────────────
+// ── Individual monthly trend chart (single-feature, 2024 only) ─
 function renderTrendCharts(data) {
-  const grid   = document.getElementById('trendsGrid');
-  const labels = makeMonthLabels();
-
-  // Remove cards for de-selected features
+  const container = document.getElementById('trendsGrid');
   const activeCols = data.columns.filter(c => selectedFeatures.has(c.key));
 
-  grid.innerHTML = '';
+  // Ensure selectedTrendFeature is valid for the current active set
+  if (!selectedTrendFeature || !activeCols.find(c => c.key === selectedTrendFeature)) {
+    selectedTrendFeature = activeCols[0]?.key || null;
+  }
 
-  activeCols.forEach((col) => {
-    const s        = data.stats[col.key];
-    const zeroOK   = col.key === 'Age' || col.key === 'DiabetesPedigreeFunction';
-    const canvasId = `trendChart_${col.key}`;
-    const globalIdx = data.columns.findIndex(c => c.key === col.key);
-    const color    = FEAT_COLORS[globalIdx % FEAT_COLORS.length];
+  if (!selectedTrendFeature) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:.875rem">No features selected.</p>';
+    return;
+  }
 
-    const card = document.createElement('div');
-    card.className = 'trend-card';
-    card.innerHTML = `
-      <div class="trend-card-header">
-        <h4 class="trend-card-title">${col.label}</h4>
-        <span class="trend-card-unit">${col.unit}</span>
+  container.innerHTML = `
+    <div class="trend-selector-wrap">
+      <span class="trend-selector-label">Select feature</span>
+      <div class="trend-sel-btns" id="trendSelBtns">
+        ${activeCols.map(col => {
+          const gi    = data.columns.findIndex(c => c.key === col.key);
+          const color = FEAT_COLORS[gi % FEAT_COLORS.length];
+          return `<button
+            class="trend-sel-btn ${col.key === selectedTrendFeature ? 'active' : ''}"
+            data-key="${col.key}"
+            style="--sel-color:${color}"
+          >${col.label}</button>`;
+        }).join('')}
       </div>
-      <div class="trend-stats">
-        <span class="trend-stat"><strong>Overall mean</strong> ${s.overall.mean}</span>
-        <span class="trend-stat" style="color:${COL_DIABETIC};font-weight:600">
-          Diabetic avg ${s.diabetic.mean}
-        </span>
-        <span class="trend-stat" style="color:${COL_HEALTHY};font-weight:600">
-          Non-diabetic avg ${s.healthy.mean}
-        </span>
-      </div>
-      <div class="trend-wrap"><canvas id="${canvasId}"></canvas></div>
-    `;
-    grid.appendChild(card);
+    </div>
+    <div class="trend-single-card" id="trendSingleCard"></div>
+  `;
+
+  container.querySelectorAll('.trend-sel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedTrendFeature = btn.dataset.key;
+      container.querySelectorAll('.trend-sel-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderSingleTrendChart(data);
+    });
   });
 
+  renderSingleTrendChart(data);
+}
+
+// ── Render the single selected-feature chart ──────────────────
+function renderSingleTrendChart(data) {
+  const col = data.columns.find(c => c.key === selectedTrendFeature);
+  if (!col) return;
+
+  const card      = document.getElementById('trendSingleCard');
+  const s         = data.stats[col.key];
+  const zeroOK    = col.key === 'DiabetesPedigreeFunction';
+  const canvasId  = 'trendChartSingle';
+  const globalIdx = data.columns.findIndex(c => c.key === col.key);
+  const color     = FEAT_COLORS[globalIdx % FEAT_COLORS.length];
+
+  card.innerHTML = `
+    <div class="trend-card-header">
+      <h4 class="trend-card-title">${col.label}</h4>
+      <span class="trend-card-unit">${col.unit}</span>
+    </div>
+    <div class="trend-stats">
+      <span class="trend-stat"><strong>Overall mean</strong> ${s.overall.mean}</span>
+      <span class="trend-stat" style="color:${COL_DIABETIC};font-weight:600">Diabetic avg ${s.diabetic.mean}</span>
+      <span class="trend-stat" style="color:${COL_HEALTHY};font-weight:600">Non-diabetic avg ${s.healthy.mean}</span>
+    </div>
+    <div class="trend-wrap trend-wrap-single"><canvas id="${canvasId}"></canvas></div>
+  `;
+
   requestAnimationFrame(() => {
-    const t = theme();
+    const t      = theme();
+    const labels = getChartLabels();
 
-    activeCols.forEach((col) => {
-      const zeroOK   = col.key === 'Age' || col.key === 'DiabetesPedigreeFunction';
-      const canvasId = `trendChart_${col.key}`;
-      const globalIdx = data.columns.findIndex(c => c.key === col.key);
-      const color    = FEAT_COLORS[globalIdx % FEAT_COLORS.length];
+    const overallMonthly  = getHistoricalSlice(groupByMonth(data.series[col.key], zeroOK), data.syntheticMonthlyAvgs[col.key]);
+    const diabeticVals    = data.series[col.key].map((v, i) => data.outcomeArr[i] === 1 ? v : null);
+    const healthyVals     = data.series[col.key].map((v, i) => data.outcomeArr[i] === 0 ? v : null);
+    const diabeticMonthly = getOutcomeSlice(groupByMonthNullable(diabeticVals, zeroOK));
+    const healthyMonthly  = getOutcomeSlice(groupByMonthNullable(healthyVals, zeroOK));
 
-      // Monthly averages — overall, diabetic-only, healthy-only
-      const overallMonthly  = groupByMonth(data.series[col.key], zeroOK);
+    const datasets = [
+      {
+        label: 'Overall',
+        data: [...overallMonthly, null],
+        borderColor: color,
+        backgroundColor: color + '20',
+        fill: true,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.35,
+        spanGaps: true,
+      },
+      {
+        label: 'Diabetic avg',
+        data: [...diabeticMonthly, null],
+        borderColor: COL_DIABETIC,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 3],
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.35,
+        spanGaps: true,
+      },
+      {
+        label: 'Non-diabetic avg',
+        data: [...healthyMonthly, null],
+        borderColor: COL_HEALTHY,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 3],
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        tension: 0.35,
+        spanGaps: true,
+      },
+    ];
 
-      // Separate series by outcome to see diabetic vs healthy monthly trend
-      const diabeticVals = data.series[col.key].map((v, i) =>
-        data.outcomeArr[i] === 1 ? v : null
-      );
-      const healthyVals = data.series[col.key].map((v, i) =>
-        data.outcomeArr[i] === 0 ? v : null
-      );
-
-      const diabeticMonthly = groupByMonthNullable(diabeticVals, zeroOK);
-      const healthyMonthly  = groupByMonthNullable(healthyVals, zeroOK);
-
-      // Build datasets array
-      const datasets = [
-        {
-          label: 'Overall',
-          data: overallMonthly,
-          borderColor: color,
-          backgroundColor: color + '18',
-          fill: true,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          tension: 0.35,
-          spanGaps: true,
-        },
-        {
-          label: 'Diabetic avg',
-          data: diabeticMonthly,
-          borderColor: COL_DIABETIC,
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderDash: [5, 3],
-          pointRadius: 2,
-          pointHoverRadius: 4,
-          tension: 0.35,
-          spanGaps: true,
-        },
-        {
-          label: 'Non-diabetic avg',
-          data: healthyMonthly,
-          borderColor: COL_HEALTHY,
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderDash: [5, 3],
-          pointRadius: 2,
-          pointHoverRadius: 4,
-          tension: 0.35,
-          spanGaps: true,
-        },
-      ];
-
-      // Add user reading as a horizontal reference line if available
-      if (userReadings[col.key] !== undefined) {
-        const refVal = userReadings[col.key];
-        datasets.push({
-          label: `Your Reading (${refVal} ${col.unit})`,
-          data: Array(NUM_MONTHS).fill(refVal),
-          borderColor: '#f59e0b',
-          backgroundColor: 'transparent',
-          borderWidth: 2.5,
-          borderDash: [10, 4],
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          tension: 0,
-          spanGaps: true,
-        });
-      }
-
-      makeChart(canvasId, 'line', { labels, datasets }, {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 300 },
-        plugins: {
-          legend: {
-            labels: {
-              color: t.legend, font: { size: 11 },
-              boxWidth: 14, padding: 10,
-              usePointStyle: true, pointStyle: 'circle',
-            },
-          },
-          tooltip: {
-            backgroundColor: t.tipBg,
-            titleColor: t.tipText,
-            bodyColor: t.tipText,
-            borderColor: t.tipBorder,
-            borderWidth: 1,
-            callbacks: {
-              label: ctx => ctx.raw !== null
-                ? ` ${ctx.dataset.label}: ${ctx.raw}`
-                : null,
-            },
-          },
-        },
-        scales: {
-          x: {
-            ...scaleOpts(t),
-            ticks: { ...scaleOpts(t).ticks, maxRotation: 45, maxTicksLimit: 8 },
-          },
-          y: { ...scaleOpts(t), beginAtZero: false, spanGaps: true },
-        },
+    if (userReadings[col.key] !== undefined) {
+      const refVal = userReadings[col.key];
+      datasets.push({
+        label: `Mar '25 Reading (${refVal} ${col.unit})`,
+        data: [...Array(14).fill(null), refVal],
+        borderColor: '#f59e0b',
+        backgroundColor: '#f59e0b',
+        borderWidth: 0,
+        pointRadius: [...Array(14).fill(0), 10],
+        pointHoverRadius: [...Array(14).fill(0), 12],
+        pointBackgroundColor: '#f59e0b',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2.5,
+        spanGaps: false,
       });
+    }
+
+    makeChart(canvasId, 'line', { labels, datasets }, {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: {
+        legend: {
+          labels: {
+            color: t.legend, font: { size: 12 },
+            boxWidth: 14, padding: 12,
+            usePointStyle: true, pointStyle: 'circle',
+          },
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: t.tipBg,
+          titleColor: t.tipText,
+          bodyColor: t.tipText,
+          borderColor: t.tipBorder,
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ctx.raw !== null
+              ? ` ${ctx.dataset.label}: ${ctx.raw}`
+              : null,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ...scaleOpts(t),
+          ticks: { ...scaleOpts(t).ticks, maxRotation: 30 },
+        },
+        y: { ...scaleOpts(t), beginAtZero: false, spanGaps: true },
+      },
     });
   });
 }

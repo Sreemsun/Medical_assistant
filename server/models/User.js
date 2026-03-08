@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema({
   vitalSigns: [vitalSignSchema],
 
   // ── Auth & Security ─────────────────────────
-  role: { type: String, enum: ['user', 'admin', 'doctor'], default: 'user' },
+  role: { type: String, enum: ['user', 'patient', 'admin', 'doctor'], default: 'user' },
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationToken: String,
   emailVerificationExpire: Date,

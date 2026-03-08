@@ -647,3 +647,347 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+/* ── Health Reading Alerts ───────────────────────────────────── */
+.ra-header {
+  margin-bottom: 12px;
+}
+
+.ra-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.ra-summary {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.ra-disclaimer {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 14px;
+}
+
+.ra-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.ra-card {
+  border: 1px solid;
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ra-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ra-feature {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ra-feature-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ra-feature-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ra-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 50px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ra-range-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.ra-advice {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.ra-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.ra-closer {
+  font-weight: 700;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 640px) {
+  .ra-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Doctor Consultation Modal ───────────────────────────────── */
+#doctorModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#doctorModal.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.dm-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: 32px 28px 24px;
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  transform: translateY(16px);
+  transition: transform 0.2s ease;
+}
+
+#doctorModal.open .dm-card {
+  transform: translateY(0);
+}
+
+.dm-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.dm-icon-wrap.severe { background: rgba(239,68,68,0.12); }
+.dm-icon-wrap.medium { background: rgba(245,158,11,0.12); }
+
+.dm-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dm-body {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.dm-flags {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+
+.dm-flag-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+}
+
+.dm-flag-item.severe { background: rgba(239,68,68,0.08);  color: #ef4444; }
+.dm-flag-item.medium { background: rgba(245,158,11,0.08); color: #f59e0b; }
+
+.dm-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.dm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+[data-theme="dark"] #doctorModal { background: rgba(0,0,0,0.7); }
+
+/* ══════════════════════════════════════════════════════════════
+   SINGLE-FEATURE TREND CHART SELECTOR
+   ══════════════════════════════════════════════════════════════ */
+
+/* Container that spans the full trends grid width */
+.trends-grid {
+  display: block;      /* override the grid to single-column flow */
+  margin-bottom: 8px;
+}
+
+/* Selector row */
+.trend-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.trend-selector-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.trend-sel-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trend-sel-btn {
+  padding: 6px 16px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trend-sel-btn::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sel-color, #6366f1);
+  opacity: 0.4;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.trend-sel-btn:hover {
+  border-color: var(--sel-color, #6366f1);
+  color: var(--text-secondary);
+}
+
+.trend-sel-btn.active {
+  border-color: var(--sel-color, #6366f1);
+  background: color-mix(in srgb, var(--sel-color, #6366f1) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.trend-sel-btn.active::before {
+  opacity: 1;
+}
+
+/* Single chart card — full width */
+.trend-single-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px 24px;
+  width: 100%;
+}
+
+/* Taller canvas for the single chart */
+.trend-wrap-single {
+  position: relative;
+  height: 340px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .trend-sel-btns { gap: 6px; }
+  .trend-sel-btn  { padding: 5px 12px; font-size: 0.75rem; }
+  .trend-wrap-single { height: 260px; }
+}
+
+/* ── Overview feature selector row ──────────────────────────── */
+#overviewSelectorWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* ── Overview empty state (shown before a feature is chosen) ─── */
+.overview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  text-align: center;
+  gap: 10px;
+}
+
+.overview-empty-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}

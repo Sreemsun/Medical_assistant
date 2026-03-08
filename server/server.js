@@ -17,6 +17,7 @@ const appointmentRoutes = require('./routes/appointments');
 const analyticsRoutes   = require('./routes/analytics');
 const doctorRoutes      = require('./routes/doctors');
 const recordRoutes      = require('./routes/records');
+const messageRoutes     = require('./routes/messages');
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/analytics',   analyticsRoutes);
 app.use('/api/doctors',     doctorRoutes);
 app.use('/api/records',     recordRoutes);
+app.use('/api/messages',    messageRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -20,12 +20,11 @@
         <div>
           <h1 class="an-title">Patient Reading Trends</h1>
           <p class="an-subtitle">
-            768 readings from the Pima Indians Diabetes Dataset grouped into
-            <strong>24 months</strong> (Jan 2023 – Dec 2024). Select which features to display
-            using the toggles below.
+            768 readings mapped as one person's history — displaying
+            <strong>Jan 2024 – Feb 2025</strong> (historical) + <strong>Mar 2025</strong> (current reading). Select a feature below to explore its monthly trend.
           </p>
         </div>
-        <span class="dataset-badge">768 Readings · 7 Features</span>
+        <span class="dataset-badge">15 Months · 6 Features</span>
       </div>
 
       <!-- ── Loading / Error ──────────────────────────────────────── -->
@@ -50,8 +49,8 @@
             <span class="predict-badge">ML · Linear Regression</span>
           </h2>
           <p class="section-sub">
-            Predicted values for <strong>Jan 2025</strong> based on a linear regression model fitted
-            on the 24-month trend. R² indicates model fit quality (closer to 1.0 = better fit).
+            Predicted values for <strong>Mar 2025</strong> based on a linear regression model fitted
+            on Jan 2024 – Feb 2025 (14 months). R² indicates model fit quality (closer to 1.0 = better fit).
           </p>
           <div class="predict-grid" id="predictGrid">
             <div class="predict-loading">
@@ -87,8 +86,12 @@
               <button class="btn btn-ghost btn-sm" id="clearReadingBtn">Clear Reading</button>
               <button class="btn btn-primary btn-sm" id="plotReadingBtn">Plot on Charts</button>
             </div>
+            <p id="readingFeedback" style="display:none;margin-top:10px;font-size:0.85rem;color:#10b981;font-weight:600;"></p>
           </div>
         </div>
+
+        <!-- ── Health Reading Alerts ─────────────────────────────── -->
+        <div id="readingAlerts" style="display:none;margin-bottom:20px;"></div>
 
         <!-- Legend -->
         <div class="outcome-legend">
@@ -97,20 +100,36 @@
           <span style="margin-left:16px;color:var(--text-muted);font-weight:400">— — dashed lines in individual charts</span>
         </div>
 
-        <!-- ── Combined normalised overview ─────────────────────── -->
+        <!-- ── Feature Trend Chart ────────────────────────────── -->
         <div class="chart-card chart-card-full">
           <div class="chart-card-header">
-            <h3 class="chart-card-title">All Features — Normalised Trend</h3>
-            <span class="chart-card-sub">Each feature scaled 0–1 so they can be overlaid. Hover to inspect values.</span>
+            <h3 class="chart-card-title">Feature Trend (Jan 2024 – Mar 2025)</h3>
+            <span class="chart-card-sub">Select a feature below. The chart shows monthly averages (Jan 2024 – Feb 2025 historical, Jan–Feb 2025 extrapolated) plus your current reading at Mar '25.</span>
           </div>
-          <div class="chart-wrap chart-wrap-lg">
-            <canvas id="chartOverview"></canvas>
+
+          <!-- Feature selector buttons -->
+          <div class="overview-selector-wrap" id="overviewSelectorWrap">
+            <!-- Injected by JS -->
+          </div>
+
+          <!-- Empty state — shown until a selection is made -->
+          <div class="overview-empty" id="overviewEmptyState">
+            <span class="overview-empty-icon">📈</span>
+            <p>Select a feature above to plot its monthly trend</p>
+          </div>
+
+          <!-- Chart area — hidden until selection -->
+          <div id="overviewChartArea" class="hidden">
+            <div class="trend-stats" id="overviewStats" style="margin-bottom:12px;"></div>
+            <div class="chart-wrap chart-wrap-lg">
+              <canvas id="chartOverview"></canvas>
+            </div>
           </div>
         </div>
 
         <!-- ── Individual feature scatter charts ──────────────────── -->
-        <h2 class="section-title">Monthly Trends by Feature</h2>
-        <p class="section-sub">Monthly average for each selected feature. Solid line = all readings · <span style="color:#ef4444;font-weight:600;">dashed red</span> = diabetic avg · <span style="color:#10b981;font-weight:600;">dashed green</span> = non-diabetic avg.</p>
+        <h2 class="section-title">Monthly Trend by Feature</h2>
+        <p class="section-sub">Jan 2024 – Feb 2025 (historical) · Mar '25 = current reading · <span style="color:#ef4444;font-weight:600;">dashed red</span> = diabetic avg · <span style="color:#10b981;font-weight:600;">dashed green</span> = non-diabetic avg · <span style="color:#f59e0b;font-weight:600;">amber dot</span> = your reading.</p>
         <div class="trends-grid" id="trendsGrid">
           <!-- Populated by JS -->
         </div>
@@ -144,5 +163,22 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/analytics.js"></script>
+
+  <!-- ── Doctor Consultation Modal ──────────────────────────── -->
+  <div class="modal-overlay" id="doctorModal" role="dialog" aria-modal="true" aria-labelledby="doctorModalTitle">
+    <div class="modal-card dm-card">
+      <div class="dm-icon-wrap" id="doctorModalIconWrap">
+        <span class="dm-icon">🩺</span>
+      </div>
+      <h3 class="dm-title" id="doctorModalTitle"></h3>
+      <p class="dm-body" id="doctorModalBody"></p>
+      <ul class="dm-flags" id="doctorModalFlags"></ul>
+      <p class="dm-note">This is an automated assessment based on standard clinical thresholds and is not a medical diagnosis.</p>
+      <div class="dm-actions">
+        <button class="btn btn-ghost btn-sm" id="doctorModalDismiss">Dismiss</button>
+        <a href="appointments.html" class="btn btn-primary btn-sm">Book Appointment</a>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

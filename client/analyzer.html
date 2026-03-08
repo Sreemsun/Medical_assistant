@@ -158,6 +158,74 @@
     <div id="results-view" class="hidden">
       <div class="results-container" id="results-container"></div>
     </div>
+
+    <!-- ── Message Your Doctor ─────────────────────────────────── -->
+    <div class="msg-section" id="msg-section">
+      <div class="msg-section-header">
+        <div class="msg-section-icon">💬</div>
+        <div>
+          <h2 class="msg-section-title">Message Your Doctor</h2>
+          <p class="msg-section-subtitle">Send a message to your doctor and view their replies</p>
+        </div>
+      </div>
+
+      <!-- Compose panel -->
+      <div class="msg-compose card">
+        <div class="card-header">
+          <span class="card-title">New Message</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="msg-doctor-select">Select Doctor</label>
+          <select id="msg-doctor-select" class="form-control">
+            <option value="">Loading doctors…</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="msg-content">Your Message <span class="required">*</span></label>
+          <textarea
+            id="msg-content"
+            class="form-control"
+            rows="3"
+            placeholder="Describe your concern or question for the doctor…"
+            maxlength="2000"
+          ></textarea>
+          <p class="form-helper"><span id="msg-char-count">0</span>/2000</p>
+        </div>
+        <div id="msg-compose-alert"></div>
+        <button class="btn btn-primary" id="msg-send-btn">Send Message</button>
+      </div>
+
+      <!-- Conversation threads list -->
+      <div class="msg-convs-wrapper" id="msg-convs-wrapper">
+        <div class="card-header" style="padding:0 0 12px">
+          <span class="card-title">Your Conversations</span>
+          <button class="btn btn-ghost btn-sm" id="msg-refresh-convs-btn">Refresh</button>
+        </div>
+        <div id="msg-convs-list">
+          <p class="text-muted text-sm">No conversations yet. Send a message above to get started.</p>
+        </div>
+      </div>
+
+      <!-- Active conversation thread -->
+      <div class="msg-thread-wrapper hidden" id="msg-thread-wrapper">
+        <div class="msg-thread-header">
+          <button class="btn btn-ghost btn-sm" id="msg-back-btn">← Back</button>
+          <span class="msg-thread-title" id="msg-thread-title">Conversation</span>
+          <button class="btn btn-ghost btn-sm" id="msg-refresh-thread-btn">Refresh</button>
+        </div>
+        <div class="msg-thread" id="msg-thread"></div>
+        <div class="msg-reply-box">
+          <textarea
+            id="msg-reply-content"
+            class="form-control"
+            rows="2"
+            placeholder="Type a follow-up message…"
+            maxlength="2000"
+          ></textarea>
+          <button class="btn btn-primary btn-sm" id="msg-reply-send-btn">Send</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="footer-placeholder"></div>

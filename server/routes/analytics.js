@@ -89,7 +89,6 @@ router.get('/diabetes', (req, res) => {
       { key: 'Insulin',                  label: 'Insulin',                   unit: 'μU/mL'   },
       { key: 'BMI',                      label: 'BMI',                       unit: 'kg/m²'   },
       { key: 'DiabetesPedigreeFunction', label: 'Diabetes Pedigree',         unit: 'score'   },
-      { key: 'Age',                      label: 'Age',                       unit: 'years'   },
     ];
 
     const diabetic = rows.filter(r => r.Outcome === 1);
@@ -98,7 +97,7 @@ router.get('/diabetes', (req, res) => {
     const stats = {};
     COLS.forEach(({ key }) => {
       // Zero values in Glucose/BP/SkinThickness/Insulin/BMI are missing => exclude
-      const zeroOK  = (key === 'Age' || key === 'DiabetesPedigreeFunction');
+      const zeroOK  = (key === 'DiabetesPedigreeFunction');
       const filter  = v => zeroOK ? true : v > 0;
 
       const all  = rows.map(r => r[key]).filter(filter);
@@ -130,6 +129,27 @@ router.get('/diabetes', (req, res) => {
     });
     const outcomeArr = rows.map(r => r.Outcome); // 0 = healthy, 1 = diabetic
 
+    // Synthesise Jan/Feb 2025 monthly averages (months 24–25) via linear regression
+    // fitted on Jul–Dec 2024 (months 18–23, 0-indexed)
+    const SYNTH_MS = 32;
+    const syntheticMonthlyAvgs = {};
+    COLS.forEach(({ key }) => {
+      const zeroOK = key === 'DiabetesPedigreeFunction';
+      const avgs = [];
+      for (let m = 0; m < 24; m++) {
+        const chunk = rows.slice(m * SYNTH_MS, (m + 1) * SYNTH_MS);
+        const valid = (zeroOK ? chunk : chunk.filter(r => r[key] > 0)).map(r => r[key]);
+        avgs.push(valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null);
+      }
+      const xs6 = [18, 19, 20, 21, 22, 23];
+      const ys6 = xs6.map(i => avgs[i]);
+      const reg = linreg(xs6, ys6);
+      syntheticMonthlyAvgs[key] = [
+        +Math.max(0, reg.intercept + reg.slope * 24).toFixed(2), // Jan 2025
+        +Math.max(0, reg.intercept + reg.slope * 25).toFixed(2), // Feb 2025
+      ];
+    });
+
     res.json({
       success: true,
       total:    rows.length,
@@ -141,6 +161,7 @@ router.get('/diabetes', (req, res) => {
       ageCounts,
       series,
       outcomeArr,
+      syntheticMonthlyAvgs,
     });
   } catch (err) {
     logger.error('analytics/diabetes error:', err.message);
@@ -156,10 +177,9 @@ router.get('/predict', (req, res) => {
       return res.status(404).json({ success: false, message: 'diabetes.csv not found.' });
     }
 
-    const rows     = parseCSV(fs.readFileSync(csvPath, 'utf-8'));
-    const MONTH_SIZE  = 32;
-    const NUM_MONTHS  = Math.ceil(rows.length / MONTH_SIZE); // 24
-    const NEXT_MONTH  = NUM_MONTHS + 1;                      // 25 → predicted as Jan 2025
+    const rows       = parseCSV(fs.readFileSync(csvPath, 'utf-8'));
+    const MONTH_SIZE = 32;
+    const RAW_MONTHS = Math.ceil(rows.length / MONTH_SIZE); // 24
 
     const COLS = [
       { key: 'Glucose',                  label: 'Glucose',          unit: 'mg/dL'  },
@@ -168,54 +188,60 @@ router.get('/predict', (req, res) => {
       { key: 'Insulin',                  label: 'Insulin',          unit: 'μU/mL'  },
       { key: 'BMI',                      label: 'BMI',              unit: 'kg/m²'  },
       { key: 'DiabetesPedigreeFunction', label: 'Diabetes Pedigree',unit: 'score'  },
-      { key: 'Age',                      label: 'Age',              unit: 'years'  },
     ];
 
     const diabeticRows = rows.filter(r => r.Outcome === 1);
     const healthyRows  = rows.filter(r => r.Outcome === 0);
 
-    // Compute monthly averages for a set of rows and one feature key
-    function monthlyAvgs(rws, key) {
-      const zeroOK = key === 'Age' || key === 'DiabetesPedigreeFunction';
+    // Compute 26-month averages: 24 raw + 2 synthetic (Jan/Feb 2025)
+    // Synthetic months extrapolated via linear regression on Jul–Dec 2024 (months 18–23)
+    function monthlyAvgs26(rws, key) {
+      const zeroOK = key === 'DiabetesPedigreeFunction';
       const avgs = [];
-      for (let i = 0; i < MONTH_SIZE * NUM_MONTHS; i += MONTH_SIZE) {
-        const chunk = rws.slice(i, i + MONTH_SIZE);
+      for (let m = 0; m < RAW_MONTHS; m++) {
+        const chunk = rws.slice(m * MONTH_SIZE, (m + 1) * MONTH_SIZE);
         const valid = (zeroOK ? chunk : chunk.filter(r => r[key] > 0)).map(r => r[key]);
         avgs.push(valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null);
       }
-      return avgs;
+      const xs6 = [18, 19, 20, 21, 22, 23];
+      const ys6 = xs6.map(i => avgs[i]);
+      const ext = linreg(xs6, ys6);
+      avgs.push(+Math.max(0, ext.intercept + ext.slope * 24).toFixed(2)); // Jan 2025
+      avgs.push(+Math.max(0, ext.intercept + ext.slope * 25).toFixed(2)); // Feb 2025
+      return avgs; // 26 values (months 0–25)
     }
 
-    // Month indices [1 … 24]
-    const xs = Array.from({ length: NUM_MONTHS }, (_, i) => i + 1);
+    // Train on Jan 2024 – Feb 2025 (months 12–25), predict month 26 = Mar 2025
+    const trainXs = Array.from({ length: 14 }, (_, i) => i + 12); // [12..25]
+    const PRED_X  = 26;
 
     const predictions = {};
     COLS.forEach(({ key }) => {
-      const aAll = monthlyAvgs(rows,        key);
-      const aDia = monthlyAvgs(diabeticRows, key);
-      const aHlt = monthlyAvgs(healthyRows,  key);
+      const aAll = monthlyAvgs26(rows,        key);
+      const aDia = monthlyAvgs26(diabeticRows, key);
+      const aHlt = monthlyAvgs26(healthyRows,  key);
 
       const buildPred = (reg, avgs) => {
-        const value     = +(reg.intercept + reg.slope * NEXT_MONTH).toFixed(2);
-        const lastValid = [...avgs].reverse().find(v => v !== null) ?? 0;
+        const value     = +Math.max(0, reg.intercept + reg.slope * PRED_X).toFixed(2);
+        const lastValid = [...avgs.slice(0, 26)].reverse().find(v => v !== null) ?? 0;
         const change    = +(value - lastValid).toFixed(2);
         return {
           value,
           lastMonth: +lastValid.toFixed(2),
           change,
-          r2:     +reg.r2.toFixed(3),
-          trend:  reg.slope > 0.01 ? 'up' : reg.slope < -0.01 ? 'down' : 'stable',
+          r2:    +reg.r2.toFixed(3),
+          trend: reg.slope > 0.01 ? 'up' : reg.slope < -0.01 ? 'down' : 'stable',
         };
       };
 
       predictions[key] = {
-        overall:  buildPred(linreg(xs, aAll), aAll),
-        diabetic: buildPred(linreg(xs, aDia), aDia),
-        healthy:  buildPred(linreg(xs, aHlt), aHlt),
+        overall:  buildPred(linreg(trainXs, trainXs.map(i => aAll[i])), aAll),
+        diabetic: buildPred(linreg(trainXs, trainXs.map(i => aDia[i])), aDia),
+        healthy:  buildPred(linreg(trainXs, trainXs.map(i => aHlt[i])), aHlt),
       };
     });
 
-    res.json({ success: true, predictions, columns: COLS, predictMonth: 'Jan 2025' });
+    res.json({ success: true, predictions, columns: COLS, predictMonth: 'Mar 2025' });
   } catch (err) {
     logger.error('analytics/predict error:', err.message);
     res.status(500).json({ success: false, message: 'Prediction failed.' });

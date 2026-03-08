@@ -240,6 +240,23 @@ router.put('/change-password', async (req, res) => {
   }
 });
 
+// ── PUT /api/user/upgrade-to-patient ──────────────────────────────────────
+router.put('/upgrade-to-patient', async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (user.role !== 'user') {
+      return res.status(400).json({ success: false, message: `Account is already a ${user.role} account.` });
+    }
+    user.role = 'patient';
+    await user.save();
+    res.json({ success: true, message: 'Account upgraded to patient.', role: user.role });
+  } catch (err) {
+    logger.error('upgrade-to-patient error:', err.message);
+    res.status(500).json({ success: false, message: 'Failed to upgrade account.' });
+  }
+});
+
 // ── DELETE /api/user/account ───────────────────────────────────────────────
 router.delete('/account', async (req, res) => {
   try {

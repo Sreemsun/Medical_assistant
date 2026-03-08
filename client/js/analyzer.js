@@ -6,8 +6,10 @@ document.getElementById('navbar-placeholder').innerHTML = buildNavbar('analyzer'
 document.getElementById('footer-placeholder').innerHTML = buildFooter();
 Auth.requireAuth();
 
-let currentQueryId = null;
+let currentQueryId  = null;
 let selectedSeverity = null;
+let _lastAnalysis   = null;   // most recent AI result
+let _lastFormData   = null;   // form data captured at submit time
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
@@ -131,6 +133,9 @@ document.getElementById('symptom-form').addEventListener('submit', async (e) => 
     additionalInfo: document.getElementById('additionalInfo').value.trim() || undefined,
   };
 
+  // Capture for "Share with Doctor" feature
+  _lastFormData = { symptoms, duration: body.duration, severity: body.severity };
+
   const res = await api.post('/symptoms/analyze', body);
 
   if (res && res.ok && res.data.success) {
@@ -177,6 +182,7 @@ function hideLoading() {
 // ── Render Results ────────────────────────────────────────────
 function renderResults(analysis, query = null) {
   clearInterval(loadingTimer);
+  _lastAnalysis = analysis;
   document.getElementById('analyzing-view').classList.add('hidden');
   document.getElementById('input-view').classList.add('hidden');
 
@@ -204,6 +210,7 @@ function renderResults(analysis, query = null) {
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" onclick="showNewAnalysis()">← New Analysis</button>
+        ${Auth.getUser()?.role === 'patient' ? `<button class="btn btn-primary btn-sm" onclick="shareAnalysisWithDoctor()">🩺 Share with Doctor</button>` : ''}
         ${currentQueryId ? `<button class="btn btn-ghost btn-sm" onclick="showRating()">Rate This Analysis</button>` : ''}
       </div>
     </div>
@@ -319,6 +326,63 @@ function renderResults(analysis, query = null) {
   if (currentQueryId) setupRating();
 }
 
+// ── Share AI analysis with doctor via messaging ────────────────
+function shareAnalysisWithDoctor() {
+  if (!_lastAnalysis) return;
+
+  const a = _lastAnalysis;
+  const symptoms = _lastFormData?.symptoms || '';
+  const duration = _lastFormData?.duration || '';
+  const severity = _lastFormData?.severity || '';
+  const conditions = (a.potentialConditions || []).slice(0, 4);
+  const whenToSee  = (a.recommendedActions?.whenToSeeDoctor || []).slice(0, 3);
+
+  let msg = `📋 AI Symptom Analysis Report\n`;
+  msg += `─────────────────────────────\n`;
+  if (symptoms) msg += `Symptoms: ${symptoms}\n`;
+  if (duration) msg += `Duration: ${duration}\n`;
+  if (severity) msg += `Reported Severity: ${severity}\n`;
+  msg += `AI Severity Rating: ${a.severityRating || 'Unknown'}\n\n`;
+
+  if (conditions.length) {
+    msg += `Potential Conditions:\n`;
+    conditions.forEach(c => {
+      msg += `• ${c.condition} (${c.confidenceScore || 0}% confidence)\n`;
+    });
+    msg += `\n`;
+  }
+
+  if (whenToSee.length) {
+    msg += `Recommended Actions:\n`;
+    whenToSee.forEach(w => { msg += `• ${w}\n`; });
+    msg += `\n`;
+  }
+
+  if (a.recommendedActions?.emergencyGuidance) {
+    msg += `⚠️ Emergency Note: ${a.recommendedActions.emergencyGuidance}\n\n`;
+  }
+
+  msg += `— Shared from MedAssist AI Symptom Analyzer`;
+
+  // Pre-fill the compose area
+  const contentEl = document.getElementById('msg-content');
+  if (contentEl) {
+    contentEl.value = msg;
+    const charCount = document.getElementById('msg-char-count');
+    if (charCount) charCount.textContent = `${msg.length}/2000`;
+  }
+
+  // Scroll the messaging section into view
+  const msgSection = document.getElementById('msg-section');
+  if (msgSection) msgSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Focus the doctor dropdown so the user can select a recipient
+  setTimeout(() => {
+    const sel = document.getElementById('msg-doctor-select');
+    if (sel) sel.focus();
+  }, 600);
+}
+
 // ── Rating System ─────────────────────────────────────────────
 let selectedRating = 0;
 
@@ -399,5 +463,207 @@ function escHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ═══════════════════════════════════════════════════════════════
+// MESSAGING MODULE
+// ═══════════════════════════════════════════════════════════════
+
+let activeConvDoctorId = null;   // doctor whose thread is open
+
+async function initMessaging() {
+  const user = Auth.getUser();
+
+  // Messaging compose is for patients only — show a notice for other roles
+  if (!user || user.role !== 'patient') {
+    const compose = document.querySelector('#msg-section .msg-compose');
+    if (compose) {
+      const roleLabel = user?.role === 'doctor' ? 'doctor' : 'non-patient';
+      compose.innerHTML = `
+        <div style="padding:18px 20px;font-size:0.875rem;color:var(--text-secondary);line-height:1.6;">
+          <strong style="color:var(--text-primary)">Patient Messaging</strong><br>
+          You are currently signed in as a <strong>${roleLabel}</strong>.
+          ${user?.role === 'doctor'
+            ? `To manage patient messages, visit your
+               <a href="doctor-appointments.html" style="color:var(--primary);font-weight:600">Appointments page</a>.`
+            : 'Messaging is available for patient accounts.'}
+        </div>`;
+    }
+    return; // skip patient-only API calls
+  }
+
+  await loadDoctorsDropdown();
+  setupMsgCharCount();
+  await loadPatientConversations();
+
+  document.getElementById('msg-send-btn').addEventListener('click', sendMessage);
+  document.getElementById('msg-refresh-convs-btn').addEventListener('click', loadPatientConversations);
+  document.getElementById('msg-back-btn').addEventListener('click', closeThread);
+  document.getElementById('msg-refresh-thread-btn').addEventListener('click', () => {
+    if (activeConvDoctorId) {
+      openConversation(activeConvDoctorId, document.getElementById('msg-thread-title').textContent);
+    }
+  });
+  document.getElementById('msg-reply-send-btn').addEventListener('click', sendReplyFromThread);
+}
+
+// ── Load doctors into the select ──────────────────────────────
+async function loadDoctorsDropdown() {
+  const res = await api.get('/doctors');
+  const sel = document.getElementById('msg-doctor-select');
+  if (!res || !res.ok || !res.data.doctors?.length) {
+    sel.innerHTML = '<option value="">No doctors available</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Choose a doctor…</option>' +
+    res.data.doctors.map(d =>
+      `<option value="${escHtml(d._id)}">${escHtml(d.name)}${d.specialty ? ' — ' + escHtml(d.specialty) : ''}</option>`
+    ).join('');
+}
+
+// ── Message char counter ───────────────────────────────────────
+function setupMsgCharCount() {
+  const ta = document.getElementById('msg-content');
+  const counter = document.getElementById('msg-char-count');
+  ta.addEventListener('input', () => { counter.textContent = ta.value.length; });
+}
+
+// ── Send a new message ────────────────────────────────────────
+async function sendMessage() {
+  Form.clearAlert('msg-compose-alert');
+  const doctorId = document.getElementById('msg-doctor-select').value;
+  const content  = document.getElementById('msg-content').value.trim();
+  const btn      = document.getElementById('msg-send-btn');
+
+  if (!doctorId) {
+    Form.showAlert('msg-compose-alert', 'Please select a doctor.', 'warning');
+    return;
+  }
+  if (!content) {
+    Form.showAlert('msg-compose-alert', 'Please type a message.', 'warning');
+    return;
+  }
+
+  Loader.setBtn(btn, true, 'Sending…');
+  const res = await api.post('/messages/send', { doctorId, content });
+  Loader.setBtn(btn, false);
+
+  if (res && res.ok) {
+    document.getElementById('msg-content').value = '';
+    document.getElementById('msg-char-count').textContent = '0';
+    Toast.success('Message sent!');
+    const sel = document.getElementById('msg-doctor-select');
+    const doctorName = sel.options[sel.selectedIndex]?.text || 'Doctor';
+    await loadPatientConversations();
+    await openConversation(doctorId, doctorName);
+  } else {
+    Form.showAlert('msg-compose-alert', res?.data?.message || 'Failed to send message.', 'error');
+  }
+}
+
+// ── Load patient conversation list ───────────────────────────
+async function loadPatientConversations() {
+  const res = await api.get('/messages/patient-conversations');
+  const list = document.getElementById('msg-convs-list');
+  if (!res || !res.ok) {
+    list.innerHTML = '<p class="text-muted text-sm">Could not load conversations.</p>';
+    return;
+  }
+  const convs = res.data.conversations || [];
+  if (!convs.length) {
+    list.innerHTML = '<p class="text-muted text-sm">No conversations yet. Send a message above to get started.</p>';
+    return;
+  }
+  list.innerHTML = convs.map(c => {
+    const dName  = escHtml(c.doctor?.name || 'Unknown Doctor');
+    const spec   = c.doctor?.specialty ? ` <span class="msg-conv-spec">${escHtml(c.doctor.specialty)}</span>` : '';
+    const last   = c.lastMessage ? escHtml(c.lastMessage.content.substring(0, 70)) + (c.lastMessage.content.length > 70 ? '…' : '') : '';
+    const time   = c.lastMessage ? DateFmt.relative(c.lastMessage.createdAt) : '';
+    const unread = c.unreadCount > 0 ? `<span class="msg-unread-badge">${c.unreadCount}</span>` : '';
+    const docId  = escHtml(c.doctor?._id || c.doctor?.id || '');
+    return `
+      <div class="msg-conv-item" data-doctor-id="${docId}" data-doctor-name="Dr. ${dName}">
+        <div class="msg-conv-avatar">${dName.charAt(0).toUpperCase()}</div>
+        <div class="msg-conv-body">
+          <div class="msg-conv-name">Dr. ${dName}${spec}</div>
+          <div class="msg-conv-preview">${last}</div>
+        </div>
+        <div class="msg-conv-meta">
+          <span class="msg-conv-time">${time}</span>
+          ${unread}
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.msg-conv-item').forEach(item => {
+    item.addEventListener('click', () => {
+      openConversation(item.dataset.doctorId, item.dataset.doctorName);
+    });
+  });
+}
+
+// ── Open a conversation thread ────────────────────────────────
+async function openConversation(doctorId, doctorName) {
+  activeConvDoctorId = doctorId;
+  document.getElementById('msg-thread-title').textContent = doctorName;
+  document.getElementById('msg-convs-wrapper').classList.add('hidden');
+  document.getElementById('msg-thread-wrapper').classList.remove('hidden');
+
+  const thread = document.getElementById('msg-thread');
+  thread.innerHTML = '<p class="text-muted text-sm" style="padding:16px">Loading…</p>';
+
+  const res = await api.get(`/messages/conversation/${doctorId}`);
+  if (!res || !res.ok) {
+    thread.innerHTML = '<p class="text-muted text-sm" style="padding:16px">Could not load messages.</p>';
+    return;
+  }
+  renderThread(res.data.messages || [], 'patient');
+}
+
+// ── Go back to conversation list ──────────────────────────────
+function closeThread() {
+  activeConvDoctorId = null;
+  document.getElementById('msg-thread-wrapper').classList.add('hidden');
+  document.getElementById('msg-convs-wrapper').classList.remove('hidden');
+  loadPatientConversations();
+}
+
+// ── Send a follow-up from within the open thread ──────────────
+async function sendReplyFromThread() {
+  if (!activeConvDoctorId) return;
+  const content = document.getElementById('msg-reply-content').value.trim();
+  if (!content) return;
+  const btn = document.getElementById('msg-reply-send-btn');
+  Loader.setBtn(btn, true, '…');
+  const res = await api.post('/messages/send', { doctorId: activeConvDoctorId, content });
+  Loader.setBtn(btn, false);
+  if (res && res.ok) {
+    document.getElementById('msg-reply-content').value = '';
+    openConversation(activeConvDoctorId, document.getElementById('msg-thread-title').textContent);
+  } else {
+    Toast.error(res?.data?.message || 'Failed to send.');
+  }
+}
+
+// ── Render message thread ─────────────────────────────────────
+function renderThread(messages, viewerRole) {
+  const thread = document.getElementById('msg-thread');
+  if (!messages.length) {
+    thread.innerHTML = '<p class="text-muted text-sm" style="padding:16px;text-align:center">No messages yet.</p>';
+    return;
+  }
+  thread.innerHTML = messages.map(m => {
+    const isMine = m.senderRole === viewerRole;
+    const time   = DateFmt.relative(m.createdAt);
+    return `
+      <div class="msg-bubble-row ${isMine ? 'msg-mine' : 'msg-theirs'}">
+        <div class="msg-bubble ${isMine ? 'msg-bubble-mine' : 'msg-bubble-theirs'}">
+          <div class="msg-bubble-content">${escHtml(m.content)}</div>
+          <div class="msg-bubble-time">${time}</div>
+        </div>
+      </div>`;
+  }).join('');
+  thread.scrollTop = thread.scrollHeight;
+}
+
 // ── Start ─────────────────────────────────────────────────────
 init();
+initMessaging();

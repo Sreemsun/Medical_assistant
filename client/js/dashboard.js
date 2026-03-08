@@ -36,6 +36,7 @@ function renderAll() {
   renderSidebar();
   renderOverview();
   renderProfile();
+  renderSettings();
   renderVitals();
   renderMedications();
   renderAllergies();
@@ -596,6 +597,37 @@ document.getElementById('change-password-form').addEventListener('submit', async
     document.getElementById('change-password-form').reset();
   } else {
     Form.showAlert('pw-alert', res?.data?.message || 'Failed to update password.', 'error');
+  }
+});
+
+// ── Settings Section ───────────────────────────────────────
+function renderSettings() {
+  const role = userData?.role || 'user';
+  const desc = document.getElementById('accountTypeDesc');
+  const wrap = document.getElementById('upgradePatientWrap');
+  if (!desc || !wrap) return;
+
+  const labels = {
+    user:    'Standard Account — basic health tracking features.',
+    patient: 'Patient Account — messaging with doctors and full health tracking enabled.',
+    doctor:  'Doctor Account — full clinical access and patient management.',
+    admin:   'Administrator Account.',
+  };
+  desc.textContent = `Current type: ${labels[role] || role}`;
+  wrap.classList.toggle('hidden', role !== 'user');
+}
+
+document.getElementById('upgradeToPatientBtn')?.addEventListener('click', async () => {
+  const confirmed = confirm('Upgrade to a Patient Account?\n\nThis will enable doctor messaging and patient features. You cannot undo this yourself.');
+  if (!confirmed) return;
+  const res = await api.put('/user/upgrade-to-patient', {});
+  if (res && res.ok) {
+    userData.role = 'patient';
+    Auth.setUser({ ...Auth.getUser(), role: 'patient' });
+    renderSettings();
+    Toast.success('Account upgraded to Patient Account.');
+  } else {
+    Toast.error(res?.data?.message || 'Upgrade failed. Please try again.');
   }
 });
 

@@ -51,7 +51,11 @@ const api = {
     if (body) options.body = isFormData ? body : JSON.stringify(body);
 
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, options);
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 15000); // 15 s timeout
+
+      const res = await fetch(`${API_BASE}${endpoint}`, { ...options, signal: controller.signal });
+      clearTimeout(timeoutId);
       const data = await res.json();
 
       if (res.status === 401) {
@@ -63,7 +67,8 @@ const api = {
       return { ok: res.ok, status: res.status, data };
     } catch (err) {
       console.error('API request failed:', err);
-      return { ok: false, status: 0, data: { success: false, message: 'Network error. Please check your connection.' } };
+      const isTimeout = err.name === 'AbortError';
+      return { ok: false, status: 0, data: { success: false, message: isTimeout ? 'Request timed out. Please check the server is running.' : 'Network error. Please check your connection.' } };
     }
   },
   get: (endpoint) => api.request('GET', endpoint),
