@@ -50,6 +50,26 @@ function histogram(data, bins = 14) {
   return { labels, counts };
 }
 
+// ── Linear regression (OLS) ───────────────────────────────────
+function linreg(xs, ys) {
+  const pts = xs.map((x, i) => [x, ys[i]]).filter(([, y]) => y !== null && !isNaN(y));
+  if (pts.length < 2) return { slope: 0, intercept: pts.length === 1 ? pts[0][1] : 0, r2: 0 };
+  const n     = pts.length;
+  const sumX  = pts.reduce((s, [x])   => s + x,     0);
+  const sumY  = pts.reduce((s, [, y]) => s + y,     0);
+  const sumXY = pts.reduce((s, [x, y]) => s + x * y, 0);
+  const sumX2 = pts.reduce((s, [x])   => s + x * x,  0);
+  const denom = n * sumX2 - sumX * sumX;
+  if (denom === 0) return { slope: 0, intercept: sumY / n, r2: 0 };
+  const slope     = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+  const yMean  = sumY / n;
+  const ssTot  = pts.reduce((s, [, y]) => s + (y - yMean) ** 2, 0);
+  const ssRes  = pts.reduce((s, [x, y]) => s + (y - (intercept + slope * x)) ** 2, 0);
+  const r2 = ssTot === 0 ? 1 : Math.max(0, 1 - ssRes / ssTot);
+  return { slope, intercept, r2 };
+}
+
 // ── GET /api/analytics/diabetes ───────────────────────────────
 router.get('/diabetes', (req, res) => {
   try {
@@ -125,6 +145,80 @@ router.get('/diabetes', (req, res) => {
   } catch (err) {
     logger.error('analytics/diabetes error:', err.message);
     res.status(500).json({ success: false, message: 'Failed to process dataset.' });
+  }
+});
+
+// ── GET /api/analytics/predict ────────────────────────────────
+router.get('/predict', (req, res) => {
+  try {
+    const csvPath = path.join(__dirname, '../../diabetes.csv');
+    if (!fs.existsSync(csvPath)) {
+      return res.status(404).json({ success: false, message: 'diabetes.csv not found.' });
+    }
+
+    const rows     = parseCSV(fs.readFileSync(csvPath, 'utf-8'));
+    const MONTH_SIZE  = 32;
+    const NUM_MONTHS  = Math.ceil(rows.length / MONTH_SIZE); // 24
+    const NEXT_MONTH  = NUM_MONTHS + 1;                      // 25 → predicted as Jan 2025
+
+    const COLS = [
+      { key: 'Glucose',                  label: 'Glucose',          unit: 'mg/dL'  },
+      { key: 'BloodPressure',            label: 'Blood Pressure',   unit: 'mmHg'   },
+      { key: 'SkinThickness',            label: 'Skin Thickness',   unit: 'mm'     },
+      { key: 'Insulin',                  label: 'Insulin',          unit: 'μU/mL'  },
+      { key: 'BMI',                      label: 'BMI',              unit: 'kg/m²'  },
+      { key: 'DiabetesPedigreeFunction', label: 'Diabetes Pedigree',unit: 'score'  },
+      { key: 'Age',                      label: 'Age',              unit: 'years'  },
+    ];
+
+    const diabeticRows = rows.filter(r => r.Outcome === 1);
+    const healthyRows  = rows.filter(r => r.Outcome === 0);
+
+    // Compute monthly averages for a set of rows and one feature key
+    function monthlyAvgs(rws, key) {
+      const zeroOK = key === 'Age' || key === 'DiabetesPedigreeFunction';
+      const avgs = [];
+      for (let i = 0; i < MONTH_SIZE * NUM_MONTHS; i += MONTH_SIZE) {
+        const chunk = rws.slice(i, i + MONTH_SIZE);
+        const valid = (zeroOK ? chunk : chunk.filter(r => r[key] > 0)).map(r => r[key]);
+        avgs.push(valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null);
+      }
+      return avgs;
+    }
+
+    // Month indices [1 … 24]
+    const xs = Array.from({ length: NUM_MONTHS }, (_, i) => i + 1);
+
+    const predictions = {};
+    COLS.forEach(({ key }) => {
+      const aAll = monthlyAvgs(rows,        key);
+      const aDia = monthlyAvgs(diabeticRows, key);
+      const aHlt = monthlyAvgs(healthyRows,  key);
+
+      const buildPred = (reg, avgs) => {
+        const value     = +(reg.intercept + reg.slope * NEXT_MONTH).toFixed(2);
+        const lastValid = [...avgs].reverse().find(v => v !== null) ?? 0;
+        const change    = +(value - lastValid).toFixed(2);
+        return {
+          value,
+          lastMonth: +lastValid.toFixed(2),
+          change,
+          r2:     +reg.r2.toFixed(3),
+          trend:  reg.slope > 0.01 ? 'up' : reg.slope < -0.01 ? 'down' : 'stable',
+        };
+      };
+
+      predictions[key] = {
+        overall:  buildPred(linreg(xs, aAll), aAll),
+        diabetic: buildPred(linreg(xs, aDia), aDia),
+        healthy:  buildPred(linreg(xs, aHlt), aHlt),
+      };
+    });
+
+    res.json({ success: true, predictions, columns: COLS, predictMonth: 'Jan 2025' });
+  } catch (err) {
+    logger.error('analytics/predict error:', err.message);
+    res.status(500).json({ success: false, message: 'Prediction failed.' });
   }
 });
 

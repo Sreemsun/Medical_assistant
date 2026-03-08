@@ -10,11 +10,13 @@ const path = require('path');
 const logger = require('./utils/logger');
 
 // Route imports
-const authRoutes = require('./routes/auth');
-const userRoutes = require('./routes/user');
-const symptomRoutes = require('./routes/symptoms');
+const authRoutes        = require('./routes/auth');
+const userRoutes        = require('./routes/user');
+const symptomRoutes     = require('./routes/symptoms');
 const appointmentRoutes = require('./routes/appointments');
 const analyticsRoutes   = require('./routes/analytics');
+const doctorRoutes      = require('./routes/doctors');
+const recordRoutes      = require('./routes/records');
 
 const app = express();
 
@@ -61,6 +63,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/symptoms', symptomRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/analytics',   analyticsRoutes);
+app.use('/api/doctors',     doctorRoutes);
+app.use('/api/records',     recordRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

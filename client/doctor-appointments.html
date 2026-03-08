@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Schedule — MedAssist</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/doctor-appointments.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="da-page">
+    <div class="da-container">
+
+      <!-- Header -->
+      <div class="da-header">
+        <div>
+          <h1 class="da-title">My Schedule</h1>
+          <p class="da-subtitle">View and manage appointments booked by patients</p>
+        </div>
+      </div>
+
+      <!-- Alert bar -->
+      <div id="daAlert" class="da-alert hidden"></div>
+
+      <!-- Status tabs -->
+      <div class="da-tabs">
+        <button class="da-tab active" data-status="">All</button>
+        <button class="da-tab" data-status="pending">Pending</button>
+        <button class="da-tab" data-status="confirmed">Confirmed</button>
+        <button class="da-tab" data-status="completed">Completed</button>
+        <button class="da-tab" data-status="cancelled">Cancelled</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="daLoading" class="da-loading">
+        <div class="da-spinner"></div>
+        <p>Loading appointments…</p>
+      </div>
+
+      <!-- Empty state -->
+      <div id="daEmpty" class="da-empty hidden">
+        <div class="da-empty-icon">📅</div>
+        <p class="da-empty-text">No appointments found</p>
+        <p class="da-empty-sub">Appointments booked by patients will appear here</p>
+      </div>
+
+      <!-- Appointments grid -->
+      <div id="daGrid" class="da-grid"></div>
+
+    </div>
+  </main>
+
+  <!-- Status update modal -->
+  <div class="modal-overlay hidden" id="statusModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="statusModalTitle">Update Appointment</h3>
+        <button class="modal-close" data-close="statusModal">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="statusModalMsg" style="color:var(--text-secondary);margin-bottom:20px;"></p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-ghost" data-close="statusModal">Cancel</button>
+          <button class="btn btn-primary" id="statusConfirmBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/doctor-appointments.js"></script>
+</body>
+</html>

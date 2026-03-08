@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Results — MedAssist</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/test-results.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="tr-page">
+    <div class="tr-container">
+
+      <!-- Header -->
+      <div class="tr-header">
+        <div>
+          <h1 class="tr-title">Test Results</h1>
+          <p class="tr-subtitle">Upload reports or manually enter test values to track your health over time</p>
+        </div>
+        <button class="btn btn-primary" id="addRecordBtn">+ Add Test Result</button>
+      </div>
+
+      <!-- Alert -->
+      <div id="trAlert" class="tr-alert hidden"></div>
+
+      <!-- Filter tabs -->
+      <div class="tr-tabs">
+        <button class="tr-tab active" data-type="">All</button>
+        <button class="tr-tab" data-type="lab_result">Lab Results</button>
+        <button class="tr-tab" data-type="diagnosis">Diagnosis</button>
+        <button class="tr-tab" data-type="prescription">Prescription</button>
+        <button class="tr-tab" data-type="vaccination">Vaccination</button>
+        <button class="tr-tab" data-type="other">Other</button>
+      </div>
+
+      <!-- ── Quick Log ──────────────────────────────────────────── -->
+      <div class="qe-section">
+        <div class="qe-section-header">
+          <div>
+            <h2 class="tr-section-title" style="margin:0 0 3px;">Quick Log a Value</h2>
+            <p class="tr-section-sub" style="margin:0;">Type a test value — saves instantly, updates trends and compares against the ML prediction.</p>
+          </div>
+        </div>
+        <form class="qe-form" id="quickLogForm" autocomplete="off">
+          <div class="qe-fields">
+            <div class="qe-field">
+              <label class="form-label">Parameter <span class="required">*</span></label>
+              <input type="text" id="qlParam" class="form-control" list="qlParamList"
+                     placeholder="e.g. Glucose" required>
+              <datalist id="qlParamList">
+                <option value="Glucose">
+                <option value="Blood Pressure">
+                <option value="Skin Thickness">
+                <option value="Insulin">
+                <option value="BMI">
+                <option value="Diabetes Pedigree">
+                <option value="Age">
+              </datalist>
+            </div>
+            <div class="qe-field qe-field-sm">
+              <label class="form-label">Value <span class="required">*</span></label>
+              <input type="number" id="qlValue" class="form-control" step="any"
+                     placeholder="120" required>
+            </div>
+            <div class="qe-field qe-field-sm">
+              <label class="form-label">Unit</label>
+              <input type="text" id="qlUnit" class="form-control" placeholder="mg/dL">
+            </div>
+            <div class="qe-field qe-field-sm">
+              <label class="form-label">Date</label>
+              <input type="date" id="qlDate" class="form-control">
+            </div>
+            <div class="qe-submit">
+              <label class="form-label">&nbsp;</label>
+              <button type="submit" class="btn btn-primary" id="qlSubmitBtn">Log Value</button>
+            </div>
+          </div>
+        </form>
+        <!-- Comparison result -->
+        <div class="qe-compare hidden" id="qeCompare"></div>
+      </div>
+
+      <!-- Trend charts (visible when 2+ readings exist for a parameter) -->
+      <div id="trendSection" class="tr-trend-section hidden">
+        <h2 class="tr-section-title">Parameter Trends</h2>
+        <p class="tr-section-sub">Automatically plotted when the same test parameter has 2 or more readings</p>
+        <div id="trendChartsRow" class="tr-trend-row"></div>
+      </div>
+
+      <!-- Loading -->
+      <div id="trLoading" class="tr-loading">
+        <div class="tr-spinner"></div>
+        <p>Loading records…</p>
+      </div>
+
+      <!-- Empty -->
+      <div id="trEmpty" class="tr-empty hidden">
+        <div class="tr-empty-icon">🧪</div>
+        <p class="tr-empty-title">No test results yet</p>
+        <p class="tr-empty-sub">Upload a report or manually enter values to get started</p>
+        <button class="btn btn-primary" id="emptyAddBtn">+ Add Your First Result</button>
+      </div>
+
+      <!-- Records list -->
+      <div id="trList" class="tr-list"></div>
+
+    </div>
+  </main>
+
+  <!-- Add/Edit Record Modal -->
+  <div class="modal-overlay hidden" id="recordModal">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="recordModalTitle">Add Test Result</h3>
+        <button class="modal-close" id="closeModal">×</button>
+      </div>
+      <div class="modal-body">
+
+        <div id="modalAlert" class="tr-alert hidden" style="margin-bottom:14px;"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Title <span class="required">*</span></label>
+            <input type="text" id="recTitle" class="form-control" placeholder="e.g. Complete Blood Count, HbA1c Test…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type <span class="required">*</span></label>
+            <select id="recType" class="form-control">
+              <option value="lab_result">Lab Result</option>
+              <option value="diagnosis">Diagnosis</option>
+              <option value="prescription">Prescription</option>
+              <option value="vital_signs">Vital Signs</option>
+              <option value="vaccination">Vaccination</option>
+              <option value="surgery">Surgery</option>
+              <option value="allergy">Allergy</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="recDate" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Doctor</label>
+            <input type="text" id="recDoctor" class="form-control" placeholder="Doctor's name (optional)">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Facility / Lab</label>
+          <input type="text" id="recFacility" class="form-control" placeholder="Hospital or lab name (optional)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes / Description</label>
+          <textarea id="recDesc" class="form-control" rows="2" placeholder="Any additional notes…"></textarea>
+        </div>
+
+        <!-- Test Parameter Values -->
+        <div class="form-group">
+          <label class="form-label">Test Parameter Values</label>
+          <p class="form-helper">Add individual test values (e.g. Glucose, HbA1c, Cholesterol…)</p>
+          <div id="testValuesContainer" class="tv-container">
+            <div class="tv-header-row">
+              <span>Parameter Name</span>
+              <span>Value</span>
+              <span>Unit</span>
+              <span>Normal Range</span>
+              <span></span>
+            </div>
+            <!-- Rows injected by JS -->
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm tr-add-row-btn" id="addParamRow">+ Add Parameter</button>
+        </div>
+
+        <!-- File Upload -->
+        <div class="form-group">
+          <label class="form-label">Upload Report <span class="tr-file-hint">(PDF, PNG, JPG — max 10MB)</span></label>
+          <div class="tr-file-area" id="fileArea">
+            <input type="file" id="reportFile" accept=".pdf,.png,.jpg,.jpeg" class="tr-file-input">
+            <span class="tr-file-label" id="fileLabel">📎 Click to choose file or drag and drop</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+          <button class="btn btn-ghost" id="cancelModal">Cancel</button>
+          <button class="btn btn-primary" id="saveRecordBtn">Save Result</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div class="modal-overlay hidden" id="deleteModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Delete Record</h3>
+        <button class="modal-close" id="closeDeleteModal">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary);margin-bottom:20px;">Are you sure you want to permanently delete this record?</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-ghost" id="cancelDelete">Cancel</button>
+          <button class="btn btn-danger" id="confirmDelete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/test-results.js"></script>
+</body>
+</html>

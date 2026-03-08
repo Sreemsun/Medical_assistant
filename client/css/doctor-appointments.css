@@ -1,0 +1,340 @@
+/* ─────────────────────────────────────────────────────────────
+   doctor-appointments.css  –  Doctor's schedule / appointment management
+───────────────────────────────────────────────────────────── */
+
+.da-page {
+  min-height: calc(100vh - 64px);
+  background: var(--bg-secondary);
+  padding: 40px 0 80px;
+}
+
+.da-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.da-header {
+  margin-bottom: 28px;
+}
+
+.da-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.da-subtitle {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ── Alert ───────────────────────────────────────────────────── */
+.da-alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+.da-alert.success  { background: rgba(16,185,129,0.1);  color: #059669; border: 1px solid rgba(16,185,129,0.25); }
+.da-alert.error    { background: rgba(239,68,68,0.08);   color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.da-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.da-tab {
+  padding: 7px 18px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.da-tab:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.da-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* ── Loading ─────────────────────────────────────────────────── */
+.da-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 24px;
+  color: var(--text-secondary);
+  gap: 12px;
+}
+
+.da-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: da-spin 0.7s linear infinite;
+}
+
+@keyframes da-spin { to { transform: rotate(360deg); } }
+
+/* ── Empty ───────────────────────────────────────────────────── */
+.da-empty {
+  text-align: center;
+  padding: 60px 24px;
+}
+
+.da-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.da-empty-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.da-empty-sub {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+/* ── Grid ────────────────────────────────────────────────────── */
+.da-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+/* ── Appointment Card ─────────────────────────────────────────── */
+.da-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: var(--transition);
+}
+
+.da-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ── Card top ────────────────────────────────────────────────── */
+.da-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.da-patient-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.da-patient-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-gradient, linear-gradient(135deg, #2563eb, #7c3aed));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.da-patient-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.da-patient-email {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Status badge ────────────────────────────────────────────── */
+.da-status-badge {
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-pending   { background: rgba(245,158,11,0.12);  color: #d97706; }
+.status-confirmed { background: rgba(37,99,235,0.1);    color: #2563eb; }
+.status-completed { background: rgba(16,185,129,0.1);   color: #059669; }
+.status-cancelled { background: rgba(239,68,68,0.08);   color: #dc2626; }
+
+/* ── Card details ────────────────────────────────────────────── */
+.da-card-details {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.da-detail {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.da-detail-icon { font-size: 0.9rem; }
+
+/* ── Reason / Notes ──────────────────────────────────────────── */
+.da-reason {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.da-reason-label {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.da-notes {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* ── Card actions ────────────────────────────────────────────── */
+.da-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.da-btn-confirm {
+  background: rgba(37,99,235,0.1);
+  color: #2563eb;
+  border: 1.5px solid rgba(37,99,235,0.25);
+  font-weight: 600;
+}
+.da-btn-confirm:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.da-btn-complete {
+  background: rgba(16,185,129,0.1);
+  color: #059669;
+  border: 1.5px solid rgba(16,185,129,0.25);
+  font-weight: 600;
+}
+.da-btn-complete:hover {
+  background: #059669;
+  color: #fff;
+}
+
+.da-btn-cancel {
+  background: rgba(239,68,68,0.08);
+  color: #dc2626;
+  border: 1.5px solid rgba(239,68,68,0.2);
+  font-weight: 600;
+}
+.da-btn-cancel:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* ── Modal ───────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-box {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow-xl, 0 20px 60px rgba(0,0,0,0.3));
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 2px 6px;
+}
+.modal-close:hover { color: var(--text-primary); }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .da-grid { grid-template-columns: 1fr; }
+  .da-title { font-size: 1.6rem; }
+}
+
+/* ── btn-danger ──────────────────────────────────────────────── */
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+.btn-danger:hover { background: #b91c1c; }

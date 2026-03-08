@@ -258,6 +258,120 @@
   .auth-form-box { max-width: 100%; }
 }
 
+/* ── Role Selector ────────────────────────────────────────────── */
+.role-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.role-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light, rgba(37,99,235,0.05));
+}
+
+.role-card.active {
+  border-color: var(--primary);
+  background: var(--primary-light, rgba(37,99,235,0.08));
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+.role-card-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.role-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.role-card.active .role-card-title {
+  color: var(--primary);
+}
+
+.role-card-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Doctor registration checkboxes ──────────────────────────── */
+.reg-check-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.reg-check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.reg-check-item input[type="checkbox"] {
+  display: none;
+}
+
+.reg-check-item:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-light, rgba(37,99,235,0.08));
+  color: var(--primary);
+}
+
+.reg-check-item:hover {
+  border-color: var(--primary);
+  color: var(--text-primary);
+}
+
+.reg-slot-group {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+}
+
+.reg-slot-group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 8px 0 6px;
+}
+
+.reg-slot-group-label:first-child {
+  margin-top: 0;
+}
+
 /* ── Dark Theme Overrides ─────────────────────────────────────── */
 [data-theme="dark"] .tags-input {
   background: var(--bg-tertiary);
@@ -265,3 +379,21 @@
 }
 [data-theme="dark"] .tag-input { color: var(--text-primary); }
 [data-theme="dark"] .input-toggle { color: var(--text-muted); }
+
+[data-theme="dark"] .role-card {
+  background: var(--bg-tertiary);
+}
+[data-theme="dark"] .role-card:hover,
+[data-theme="dark"] .role-card.active {
+  background: rgba(96,165,250,0.1);
+  border-color: #60a5fa;
+}
+[data-theme="dark"] .role-card.active .role-card-title { color: #60a5fa; }
+
+[data-theme="dark"] .reg-check-item { background: var(--bg-tertiary); }
+[data-theme="dark"] .reg-check-item:has(input:checked) {
+  background: rgba(96,165,250,0.12);
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+[data-theme="dark"] .reg-slot-group { background: var(--bg-tertiary); }

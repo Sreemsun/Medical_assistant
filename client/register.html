@@ -12,11 +12,11 @@
 
   <div class="auth-layout">
     <!-- Left Visual Panel -->
-    <div class="auth-visual">
+    <div class="auth-visual" id="authVisual">
       <div class="auth-visual-content">
-        <h2 class="auth-visual-title">Start Your Health Journey Today</h2>
-        <p class="auth-visual-subtitle">Create your free account and gain access to AI-powered symptom analysis, personal medical records, and comprehensive health tracking.</p>
-        <ul class="auth-features">
+        <h2 class="auth-visual-title" id="visualTitle">Start Your Health Journey Today</h2>
+        <p class="auth-visual-subtitle" id="visualSubtitle">Create your free account and gain access to AI-powered symptom analysis, personal medical records, and comprehensive health tracking.</p>
+        <ul class="auth-features" id="visualFeatures">
           <li class="auth-feature">
             <div class="auth-feature-icon">🤖</div>
             <div class="auth-feature-text">
@@ -69,7 +69,7 @@
           </div>
           <div class="step-item" id="step-ind-3">
             <div class="step-circle">3</div>
-            <div class="step-label">Medical</div>
+            <div class="step-label" id="step3Label">Medical</div>
           </div>
         </div>
 
@@ -77,8 +77,29 @@
         <div id="form-alert"></div>
 
         <form id="register-form" novalidate>
+          <!-- Hidden role field -->
+          <input type="hidden" id="selectedRole" value="patient">
+
           <!-- Step 1: Account Info -->
           <div class="form-step active" id="step-1">
+
+            <!-- Role Selector -->
+            <div class="form-group">
+              <label class="form-label">I am registering as <span class="required">*</span></label>
+              <div class="role-selector">
+                <div class="role-card active" id="role-patient" data-role="patient">
+                  <div class="role-card-icon">🏥</div>
+                  <div class="role-card-title">Patient</div>
+                  <div class="role-card-desc">Track health, book appointments, and manage medical records</div>
+                </div>
+                <div class="role-card" id="role-doctor" data-role="doctor">
+                  <div class="role-card-icon">👨‍⚕️</div>
+                  <div class="role-card-title">Doctor</div>
+                  <div class="role-card-desc">Set up your profile, manage availability, and see patients</div>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label" for="fullName">Full Name <span class="required">*</span></label>
               <input type="text" id="fullName" name="fullName" class="form-control" placeholder="Enter your full name" autocomplete="name">
@@ -134,7 +155,7 @@
               <label class="form-label" for="phoneNumber">Phone Number</label>
               <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control" placeholder="+1 (555) 000-0000">
             </div>
-            <div class="form-group">
+            <div class="form-group" id="bloodTypeRow">
               <label class="form-label" for="bloodType">Blood Type</label>
               <select id="bloodType" name="bloodType" class="form-control">
                 <option value="">Select blood type</option>
@@ -151,38 +172,104 @@
             </div>
           </div>
 
-          <!-- Step 3: Medical Info -->
+          <!-- Step 3: Conditional — Patient Medical Info -->
           <div class="form-step" id="step-3">
-            <div class="form-group">
-              <label class="form-label">Chronic Conditions</label>
-              <p class="form-helper">Type a condition and press Enter to add it as a tag</p>
-              <div class="tags-input" id="conditions-input">
-                <input type="text" class="tag-input" id="condition-text" placeholder="e.g., Diabetes, Hypertension...">
-              </div>
-              <input type="hidden" id="chronicConditions" name="chronicConditions">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Known Allergies</label>
-              <p class="form-helper">Type an allergy and press Enter to add it</p>
-              <div class="tags-input" id="allergies-input">
-                <input type="text" class="tag-input" id="allergy-text" placeholder="e.g., Penicillin, Peanuts...">
-              </div>
-              <input type="hidden" id="allergiesList" name="allergiesList">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="emergencyName">Emergency Contact Name</label>
-              <input type="text" id="emergencyName" name="emergencyName" class="form-control" placeholder="Contact's full name">
-            </div>
-            <div class="form-row">
+
+            <!-- Patient panel -->
+            <div id="step3-patient">
               <div class="form-group">
-                <label class="form-label" for="emergencyRelation">Relationship</label>
-                <input type="text" id="emergencyRelation" name="emergencyRelation" class="form-control" placeholder="e.g., Spouse">
+                <label class="form-label">Chronic Conditions</label>
+                <p class="form-helper">Type a condition and press Enter to add it as a tag</p>
+                <div class="tags-input" id="conditions-input">
+                  <input type="text" class="tag-input" id="condition-text" placeholder="e.g., Diabetes, Hypertension...">
+                </div>
+                <input type="hidden" id="chronicConditions" name="chronicConditions">
               </div>
               <div class="form-group">
-                <label class="form-label" for="emergencyPhone">Phone</label>
-                <input type="tel" id="emergencyPhone" name="emergencyPhone" class="form-control" placeholder="+1 (555) 000-0000">
+                <label class="form-label">Known Allergies</label>
+                <p class="form-helper">Type an allergy and press Enter to add it</p>
+                <div class="tags-input" id="allergies-input">
+                  <input type="text" class="tag-input" id="allergy-text" placeholder="e.g., Penicillin, Peanuts...">
+                </div>
+                <input type="hidden" id="allergiesList" name="allergiesList">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="emergencyName">Emergency Contact Name</label>
+                <input type="text" id="emergencyName" name="emergencyName" class="form-control" placeholder="Contact's full name">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="emergencyRelation">Relationship</label>
+                  <input type="text" id="emergencyRelation" name="emergencyRelation" class="form-control" placeholder="e.g., Spouse">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="emergencyPhone">Phone</label>
+                  <input type="tel" id="emergencyPhone" name="emergencyPhone" class="form-control" placeholder="+1 (555) 000-0000">
+                </div>
               </div>
             </div>
+
+            <!-- Doctor panel -->
+            <div id="step3-doctor" style="display:none;">
+              <div class="form-group">
+                <label class="form-label" for="specialty">Specialty <span class="required">*</span></label>
+                <input type="text" id="specialty" name="specialty" class="form-control" placeholder="e.g., Cardiologist, Dermatologist...">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="experience">Years of Experience</label>
+                  <input type="number" id="experience" name="experience" class="form-control" placeholder="e.g., 5" min="0" max="60">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="doctorBio">Short Bio</label>
+                <textarea id="doctorBio" name="doctorBio" class="form-control" rows="3" placeholder="Brief professional summary (optional)" maxlength="500" style="resize:vertical;"></textarea>
+              </div>
+
+              <!-- Availability: Days -->
+              <div class="form-group">
+                <label class="form-label">Available Days</label>
+                <div class="reg-check-grid">
+                  <label class="reg-check-item"><input type="checkbox" name="avDay" value="Monday">Mon</label>
+                  <label class="reg-check-item"><input type="checkbox" name="avDay" value="Tuesday">Tue</label>
+                  <label class="reg-check-item"><input type="checkbox" name="avDay" value="Wednesday">Wed</label>
+                  <label class="reg-check-item"><input type="checkbox" name="avDay" value="Thursday">Thu</label>
+                  <label class="reg-check-item"><input type="checkbox" name="avDay" value="Friday">Fri</label>
+                  <label class="reg-check-item"><input type="checkbox" name="avDay" value="Saturday">Sat</label>
+                  <label class="reg-check-item"><input type="checkbox" name="avDay" value="Sunday">Sun</label>
+                </div>
+              </div>
+
+              <!-- Availability: Time Slots -->
+              <div class="form-group">
+                <label class="form-label">Time Slots</label>
+                <div class="reg-slot-group">
+                  <p class="reg-slot-group-label">Morning</p>
+                  <div class="reg-check-grid">
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="08:00 AM">08:00 AM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="09:00 AM">09:00 AM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="10:00 AM">10:00 AM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="11:00 AM">11:00 AM</label>
+                  </div>
+                  <p class="reg-slot-group-label">Afternoon</p>
+                  <div class="reg-check-grid">
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="12:00 PM">12:00 PM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="01:00 PM">01:00 PM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="02:00 PM">02:00 PM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="03:00 PM">03:00 PM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="04:00 PM">04:00 PM</label>
+                  </div>
+                  <p class="reg-slot-group-label">Evening</p>
+                  <div class="reg-check-grid">
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="05:00 PM">05:00 PM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="06:00 PM">06:00 PM</label>
+                    <label class="reg-check-item"><input type="checkbox" name="avSlot" value="07:00 PM">07:00 PM</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Terms & submit (shared) -->
             <div class="form-group">
               <label class="checkbox-group">
                 <input type="checkbox" id="terms" name="terms">
@@ -211,10 +298,74 @@
     document.getElementById('footer-placeholder').innerHTML = buildFooter();
     Auth.redirectIfLoggedIn();
 
-    // Multi-step logic
+    // ── Role management ──────────────────────────────────────────
+    const ROLE_CONTENT = {
+      patient: {
+        title:    'Start Your Health Journey Today',
+        subtitle: 'Create your free account and gain access to AI-powered symptom analysis, personal medical records, and comprehensive health tracking.',
+        features: [
+          { icon: '🤖', title: 'AI Symptom Analyzer', desc: 'Instant analysis of your symptoms with condition suggestions' },
+          { icon: '📋', title: 'Medical Records',     desc: 'Store and access your complete health history securely' },
+          { icon: '❤️', title: 'Vital Signs Tracking', desc: 'Monitor blood pressure, heart rate, and more over time' },
+          { icon: '🔒', title: 'Bank-Grade Security',  desc: 'Your health data encrypted and protected at all times' },
+        ],
+        step3Label: 'Medical',
+      },
+      doctor: {
+        title:    'Join MedAssist as a Doctor',
+        subtitle: 'Create your doctor profile to manage availability, accept patient appointments, and deliver excellent care.',
+        features: [
+          { icon: '📅', title: 'Appointment Management', desc: 'Set your schedule and manage patient bookings easily' },
+          { icon: '👥', title: 'Patient Records',        desc: 'Access patient histories and notes in one place' },
+          { icon: '🩺', title: 'Specialty Profile',       desc: 'Showcase your expertise and credentials to patients' },
+          { icon: '🔒', title: 'Secure Platform',         desc: 'HIPAA-compliant data protection for all records' },
+        ],
+        step3Label: 'Profile',
+      },
+    };
+
+    function applyRole(role) {
+      document.getElementById('selectedRole').value = role;
+
+      // Update role cards
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('active'));
+      document.getElementById('role-' + role).classList.add('active');
+
+      // Update left panel
+      const rc = ROLE_CONTENT[role];
+      document.getElementById('visualTitle').textContent    = rc.title;
+      document.getElementById('visualSubtitle').textContent = rc.subtitle;
+      document.getElementById('visualFeatures').innerHTML = rc.features.map(f => `
+        <li class="auth-feature">
+          <div class="auth-feature-icon">${f.icon}</div>
+          <div class="auth-feature-text">
+            <div class="auth-feature-title">${f.title}</div>
+            ${f.desc}
+          </div>
+        </li>
+      `).join('');
+
+      // Update step 3 label
+      document.getElementById('step3Label').textContent = rc.step3Label;
+
+      // Toggle step 3 content
+      const isDoctor = role === 'doctor';
+      document.getElementById('step3-patient').style.display = isDoctor ? 'none' : '';
+      document.getElementById('step3-doctor').style.display  = isDoctor ? '' : 'none';
+
+      // Hide blood type for doctors
+      document.getElementById('bloodTypeRow').style.display = isDoctor ? 'none' : '';
+    }
+
+    // Wire role cards
+    document.querySelectorAll('.role-card').forEach(card => {
+      card.addEventListener('click', () => applyRole(card.dataset.role));
+    });
+
+    // ── Multi-step logic ─────────────────────────────────────────
     let currentStep = 1;
     const conditions = [];
-    const allergies = [];
+    const allergies  = [];
 
     const showStep = (step) => {
       document.querySelectorAll('.form-step').forEach((s, i) => {
@@ -223,42 +374,42 @@
       document.querySelectorAll('#register-form .step-item').forEach((el, i) => {
         el.classList.remove('active', 'done');
         if (i + 1 === step) el.classList.add('active');
-        if (i + 1 < step) el.classList.add('done');
+        if (i + 1 < step)  el.classList.add('done');
       });
       currentStep = step;
     };
 
-    // Password toggle
+    // ── Password toggle ──────────────────────────────────────────
     const setupToggle = (inputId, btnId) => {
       const input = document.getElementById(inputId);
-      const btn = document.getElementById(btnId);
+      const btn   = document.getElementById(btnId);
       btn.addEventListener('click', () => {
-        input.type = input.type === 'password' ? 'text' : 'password';
+        input.type      = input.type === 'password' ? 'text' : 'password';
         btn.textContent = input.type === 'password' ? '👁' : '🙈';
       });
     };
-    setupToggle('password', 'togglePassword');
+    setupToggle('password',        'togglePassword');
     setupToggle('confirmPassword', 'toggleConfirm');
 
-    // Password strength
+    // ── Password strength ────────────────────────────────────────
     PasswordStrength.attach('password', 'strength-fill', 'strength-text');
 
-    // Step 1 validation
+    // ── Step 1 validation ────────────────────────────────────────
     document.getElementById('next-step-1').addEventListener('click', () => {
       Form.clearErrors(document.getElementById('register-form'));
       Form.clearAlert('form-alert');
 
       const fullName = document.getElementById('fullName').value.trim();
-      const email = document.getElementById('email').value.trim();
+      const email    = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const confirm = document.getElementById('confirmPassword').value;
+      const confirm  = document.getElementById('confirmPassword').value;
       let valid = true;
 
-      if (!fullName || fullName.length < 2) { Form.showError('fullName', 'Full name must be at least 2 characters'); valid = false; }
-      if (!email || !/^\S+@\S+\.\S+$/.test(email)) { Form.showError('email', 'Please enter a valid email address'); valid = false; }
-      if (!password || password.length < 8) { Form.showError('password', 'Password must be at least 8 characters'); valid = false; }
+      if (!fullName || fullName.length < 2)           { Form.showError('fullName', 'Full name must be at least 2 characters'); valid = false; }
+      if (!email || !/^\S+@\S+\.\S+$/.test(email))   { Form.showError('email',    'Please enter a valid email address');       valid = false; }
+      if (!password || password.length < 8)           { Form.showError('password', 'Password must be at least 8 characters');   valid = false; }
       else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) { Form.showError('password', 'Must contain uppercase, lowercase, and a number'); valid = false; }
-      if (password !== confirm) { Form.showError('confirmPassword', 'Passwords do not match'); valid = false; }
+      if (password !== confirm)                       { Form.showError('confirmPassword', 'Passwords do not match');            valid = false; }
 
       if (valid) showStep(2);
     });
@@ -267,11 +418,11 @@
     document.getElementById('next-step-2').addEventListener('click', () => showStep(3));
     document.getElementById('back-step-3').addEventListener('click', () => showStep(2));
 
-    // Tags system
+    // ── Tags system (patient conditions / allergies) ─────────────
     const setupTags = (inputId, displayId, hiddenId, arr) => {
       const textInput = document.getElementById(inputId);
-      const display = document.getElementById(displayId);
-      const hidden = document.getElementById(hiddenId);
+      const display   = document.getElementById(displayId);
+      const hidden    = document.getElementById(hiddenId);
 
       const renderTags = () => {
         display.querySelectorAll('.tag').forEach(t => t.remove());
@@ -279,7 +430,6 @@
           const tag = document.createElement('span');
           tag.className = 'tag';
           tag.innerHTML = `${item} <button class="tag-remove" data-i="${i}">×</button>`;
-          display.insertBefore(tag, textInput.parentElement || textInput);
           display.insertBefore(tag, display.firstChild);
         });
         hidden.value = JSON.stringify(arr);
@@ -303,9 +453,13 @@
     };
 
     setupTags('condition-text', 'conditions-input', 'chronicConditions', conditions);
-    setupTags('allergy-text', 'allergies-input', 'allergiesList', allergies);
+    setupTags('allergy-text',   'allergies-input',  'allergiesList',     allergies);
 
-    // Form submit
+    // ── Helper: get checked values by input name ─────────────────
+    const getChecked = (name) =>
+      [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value);
+
+    // ── Form submit ──────────────────────────────────────────────
     document.getElementById('register-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       Form.clearAlert('form-alert');
@@ -315,33 +469,59 @@
         return;
       }
 
+      const role      = document.getElementById('selectedRole').value;
+      const isDoctor  = role === 'doctor';
+
+      // Doctor-specific validation
+      if (isDoctor) {
+        const spec = document.getElementById('specialty').value.trim();
+        if (!spec) {
+          Form.showAlert('form-alert', 'Specialty is required for doctor registration.', 'error');
+          return;
+        }
+      }
+
       const submitBtn = document.getElementById('submit-btn');
       Loader.setBtn(submitBtn, true, 'Creating account...');
 
       const body = {
-        fullName: document.getElementById('fullName').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        password: document.getElementById('password').value,
-        age: document.getElementById('age').value || undefined,
-        gender: document.getElementById('gender').value || undefined,
-        dateOfBirth: document.getElementById('dateOfBirth').value || undefined,
-        bloodType: document.getElementById('bloodType').value || undefined,
-        chronicConditions: conditions.length ? conditions : undefined,
-        emergencyContact: {
-          name: document.getElementById('emergencyName').value.trim() || undefined,
-          relationship: document.getElementById('emergencyRelation').value.trim() || undefined,
-          phone: document.getElementById('emergencyPhone').value.trim() || undefined,
-        },
+        fullName:   document.getElementById('fullName').value.trim(),
+        email:      document.getElementById('email').value.trim(),
+        password:   document.getElementById('password').value,
+        age:        document.getElementById('age').value || undefined,
+        gender:     document.getElementById('gender').value || undefined,
+        dateOfBirth:document.getElementById('dateOfBirth').value || undefined,
+        phoneNumber:document.getElementById('phoneNumber').value.trim() || undefined,
+        role,
       };
+
+      if (isDoctor) {
+        body.specialty    = document.getElementById('specialty').value.trim();
+        body.experience   = document.getElementById('experience').value || undefined;
+        body.bio          = document.getElementById('doctorBio').value.trim() || undefined;
+        body.availability = getChecked('avDay');
+        body.slots        = getChecked('avSlot');
+      } else {
+        body.bloodType    = document.getElementById('bloodType').value || undefined;
+        body.chronicConditions = conditions.length ? conditions : undefined;
+        body.emergencyContact  = {
+          name:         document.getElementById('emergencyName').value.trim()    || undefined,
+          relationship: document.getElementById('emergencyRelation').value.trim() || undefined,
+          phone:        document.getElementById('emergencyPhone').value.trim()    || undefined,
+        };
+      }
 
       const res = await api.post('/auth/register', body);
 
       if (res && res.ok && res.data.success) {
-        const remember = false;
-        Auth.setToken(res.data.token, remember);
-        Auth.setUser(res.data.user, remember);
-        Toast.success('Account created! Redirecting to dashboard...');
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+        Auth.setToken(res.data.token, false);
+        Auth.setUser(res.data.user, false);
+        const redirect = isDoctor ? 'doctor-profile.html' : 'dashboard.html';
+        Toast.success(isDoctor
+          ? 'Doctor account created! Redirecting to manage your profile...'
+          : 'Account created! Redirecting to dashboard...'
+        );
+        setTimeout(() => { window.location.href = redirect; }, 1200);
       } else {
         Loader.setBtn(submitBtn, false);
         const msg = res?.data?.message || 'Registration failed. Please try again.';

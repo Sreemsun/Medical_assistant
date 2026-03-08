@@ -14,6 +14,14 @@ const medicalRecordSchema = new mongoose.Schema({
   doctor: { type: String, trim: true },
   facility: { type: String, trim: true },
   attachments: [{ filename: String, path: String, uploadedAt: { type: Date, default: Date.now } }],
+  // Structured test parameter values (e.g. Glucose 120 mg/dL)
+  testValues: [{
+    name:   { type: String, trim: true },   // e.g. "Glucose"
+    value:  { type: Number },               // e.g. 120
+    unit:   { type: String, trim: true },   // e.g. "mg/dL"
+    refMin: { type: Number },               // normal range min (optional)
+    refMax: { type: Number },               // normal range max (optional)
+  }],
 }, { _id: true });
 
 const vitalSignSchema = new mongoose.Schema({
@@ -64,7 +72,7 @@ const userSchema = new mongoose.Schema({
   vitalSigns: [vitalSignSchema],
 
   // ── Auth & Security ─────────────────────────
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  role: { type: String, enum: ['user', 'admin', 'doctor'], default: 'user' },
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationToken: String,
   emailVerificationExpire: Date,

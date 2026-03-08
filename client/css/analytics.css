@@ -272,6 +272,78 @@
   color: var(--text-secondary);
 }
 
+/* ── Patient Reading Section ─────────────────────────────────── */
+.reading-section {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.reading-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background var(--transition);
+}
+
+.reading-toggle:hover { background: var(--bg-secondary); }
+
+.reading-arrow {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.reading-arrow.open { transform: rotate(180deg); }
+
+.reading-body {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.reading-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 14px 0 16px;
+}
+
+.reading-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reading-field label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.reading-field .reading-unit {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.reading-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 /* ── Outcome Legend ──────────────────────────────────────────── */
 .outcome-legend {
   display: flex;
@@ -447,4 +519,131 @@
   .an-title  { font-size: 1.6rem; }
   .histograms-grid { grid-template-columns: 1fr; }
   .summary-cards   { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── ML Predictions Section ──────────────────────────────────── */
+.predict-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 50px;
+  background: rgba(99,102,241,0.12);
+  color: var(--primary);
+  border: 1px solid rgba(99,102,241,0.2);
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+.predict-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  padding: 12px 0;
+}
+
+.predict-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.predict-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-top: 3px solid;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: var(--transition);
+}
+
+.predict-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.predict-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.predict-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.predict-card-unit {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.predict-main {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.predict-main-val {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.predict-last {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.predict-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.predict-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.predict-row-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 90px;
+}
+
+.predict-row-val {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.predict-unit {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.predict-change {
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.predict-up     { color: #10b981; }
+.predict-down   { color: #ef4444; }
+.predict-stable { color: #64748b; }
+
+.predict-r2 {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
 }

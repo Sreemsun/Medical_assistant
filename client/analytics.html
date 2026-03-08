@@ -43,6 +43,24 @@
         <!-- Summary Cards -->
         <div class="summary-cards" id="summaryCards"></div>
 
+        <!-- ── ML Predictions ────────────────────────────────────── -->
+        <div id="predictSection" style="display:none;">
+          <h2 class="section-title">
+            Next Month Predictions
+            <span class="predict-badge">ML · Linear Regression</span>
+          </h2>
+          <p class="section-sub">
+            Predicted values for <strong>Jan 2025</strong> based on a linear regression model fitted
+            on the 24-month trend. R² indicates model fit quality (closer to 1.0 = better fit).
+          </p>
+          <div class="predict-grid" id="predictGrid">
+            <div class="predict-loading">
+              <div class="an-spinner" style="width:28px;height:28px;border-width:2px;"></div>
+              <span>Computing predictions…</span>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Feature Filter ─────────────────────────────────────── -->
         <div class="filter-section">
           <div class="filter-label">
@@ -51,6 +69,24 @@
           </div>
           <div class="feature-filter" id="featureFilter">
             <!-- Chips injected by JS -->
+          </div>
+        </div>
+
+        <!-- ── Patient Reading Input ──────────────────────────────── -->
+        <div class="reading-section">
+          <button class="reading-toggle" id="readingToggle">
+            <span>📊 Enter Your Own Reading</span>
+            <span class="reading-arrow" id="readingArrow">▼</span>
+          </button>
+          <div class="reading-body hidden" id="readingBody">
+            <p class="reading-hint">Enter your measured values below. They will appear as a reference line on the corresponding charts.</p>
+            <div class="reading-inputs" id="readingInputs">
+              <!-- Populated by JS for each feature -->
+            </div>
+            <div class="reading-actions">
+              <button class="btn btn-ghost btn-sm" id="clearReadingBtn">Clear Reading</button>
+              <button class="btn btn-primary btn-sm" id="plotReadingBtn">Plot on Charts</button>
+            </div>
           </div>
         </div>
 

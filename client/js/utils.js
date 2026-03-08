@@ -69,6 +69,7 @@ const api = {
   get: (endpoint) => api.request('GET', endpoint),
   post: (endpoint, body) => api.request('POST', endpoint, body),
   put: (endpoint, body) => api.request('PUT', endpoint, body),
+  patch: (endpoint, body) => api.request('PATCH', endpoint, body),
   delete: (endpoint) => api.request('DELETE', endpoint),
   postForm: (endpoint, formData) => api.request('POST', endpoint, formData, true),
 };
@@ -250,12 +251,19 @@ const _sunSVG = `<svg class="icon-sun" width="16" height="16" viewBox="0 0 16 16
 
 function buildNavbar(activePage = '') {
   const isLoggedIn = Auth.isLoggedIn();
+  const user       = Auth.getUser();
+  const isDoctor   = user?.role === 'doctor';
 
   const navLinks = isLoggedIn
     ? `<a href="dashboard.html" class="nav-link ${activePage === 'dashboard' ? 'active' : ''}">Dashboard</a>
        <a href="analyzer.html" class="nav-link ${activePage === 'analyzer' ? 'active' : ''}">Symptom Analyzer</a>
        <a href="appointments.html" class="nav-link ${activePage === 'appointments' ? 'active' : ''}">Appointments</a>
-       <a href="analytics.html" class="nav-link ${activePage === 'analytics' ? 'active' : ''}">Analytics</a>
+       ${isDoctor ? `<a href="doctor-appointments.html" class="nav-link ${activePage === 'doctor-appointments' ? 'active' : ''}">My Schedule</a>` : ''}
+       ${isDoctor
+         ? `<a href="doctor-patients.html" class="nav-link ${activePage === 'doctor-patients' ? 'active' : ''}">Patients</a>`
+         : `<a href="analytics.html" class="nav-link ${activePage === 'analytics' ? 'active' : ''}">Analytics</a>`}
+       ${!isDoctor ? `<a href="test-results.html" class="nav-link ${activePage === 'test-results' ? 'active' : ''}">Test Results</a>` : ''}
+       <a href="doctor-profile.html" class="nav-link ${activePage === 'doctors' ? 'active' : ''}">Doctors</a>
        <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Log Out</button>`
     : `<a href="login.html" class="nav-link ${activePage === 'login' ? 'active' : ''}">Log In</a>
        <a href="register.html" class="btn btn-primary btn-sm">Get Started</a>`;

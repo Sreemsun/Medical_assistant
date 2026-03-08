@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Doctors – MedAssist</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/doctor-profile.css" />
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="dp-page">
+    <div class="dp-container">
+
+      <!-- ── Header ──────────────────────────────────────────────────── -->
+      <div class="dp-header">
+        <div>
+          <h1 class="dp-title">Doctor Profiles</h1>
+          <p class="dp-subtitle">Add and manage doctor profiles. These appear in the Appointments section for patients to book.</p>
+        </div>
+        <button class="btn btn-primary" id="addDoctorBtn">+ Add Doctor</button>
+      </div>
+
+      <!-- ── Alert bar ───────────────────────────────────────────────── -->
+      <div id="dpAlert" class="dp-alert hidden"></div>
+
+      <!-- ── Doctors grid ────────────────────────────────────────────── -->
+      <div id="doctorsLoading" class="dp-loading">
+        <div class="dp-spinner"></div><p>Loading doctors…</p>
+      </div>
+
+      <div id="doctorsEmpty" class="dp-empty hidden">
+        <div class="dp-empty-icon">👨‍⚕️</div>
+        <h3>No doctor profiles yet</h3>
+        <p>Click <strong>+ Add Doctor</strong> to create the first profile.</p>
+      </div>
+
+      <div class="dp-grid" id="doctorsGrid"></div>
+
+    </div>
+  </main>
+
+  <!-- ════════════════════════════════════════════════════════════
+       Add / Edit Doctor Modal
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="doctorModal">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3 class="modal-title" id="doctorModalTitle">Add Doctor</h3>
+        <button class="modal-close" data-close="doctorModal">×</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="dp-form-grid">
+          <!-- Left col -->
+          <div>
+            <div class="form-group">
+              <label class="form-label">Full Name <span class="req">*</span></label>
+              <input type="text" id="fName" class="form-control" placeholder="e.g. Dr. Jane Smith" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Specialty <span class="req">*</span></label>
+              <input type="text" id="fSpecialty" class="form-control" placeholder="e.g. Cardiologist" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="fEmail" class="form-control" placeholder="doctor@hospital.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="text" id="fPhone" class="form-control" placeholder="+1 555-000-0000" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Years of Experience</label>
+              <input type="number" id="fExperience" class="form-control" min="0" max="60" placeholder="e.g. 10" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bio / Description</label>
+              <textarea id="fBio" class="form-control" rows="3" maxlength="500" placeholder="Brief description of the doctor's expertise…"></textarea>
+            </div>
+          </div>
+
+          <!-- Right col -->
+          <div>
+            <!-- Availability days -->
+            <div class="form-group">
+              <label class="form-label">Available Days</label>
+              <div class="check-grid">
+                <label class="check-item"><input type="checkbox" name="day" value="Monday" /><span>Mon</span></label>
+                <label class="check-item"><input type="checkbox" name="day" value="Tuesday" /><span>Tue</span></label>
+                <label class="check-item"><input type="checkbox" name="day" value="Wednesday" /><span>Wed</span></label>
+                <label class="check-item"><input type="checkbox" name="day" value="Thursday" /><span>Thu</span></label>
+                <label class="check-item"><input type="checkbox" name="day" value="Friday" /><span>Fri</span></label>
+                <label class="check-item"><input type="checkbox" name="day" value="Saturday" /><span>Sat</span></label>
+                <label class="check-item"><input type="checkbox" name="day" value="Sunday" /><span>Sun</span></label>
+              </div>
+            </div>
+
+            <!-- Time slots -->
+            <div class="form-group" style="margin-top:16px;">
+              <label class="form-label">Time Slots</label>
+              <div class="slot-groups">
+                <div class="slot-group-label">Morning</div>
+                <div class="check-grid check-grid-slots">
+                  <label class="check-item"><input type="checkbox" name="slot" value="09:00 AM" /><span>9:00 AM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="09:30 AM" /><span>9:30 AM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="10:00 AM" /><span>10:00 AM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="10:30 AM" /><span>10:30 AM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="11:00 AM" /><span>11:00 AM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="11:30 AM" /><span>11:30 AM</span></label>
+                </div>
+                <div class="slot-group-label" style="margin-top:8px;">Afternoon</div>
+                <div class="check-grid check-grid-slots">
+                  <label class="check-item"><input type="checkbox" name="slot" value="02:00 PM" /><span>2:00 PM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="02:30 PM" /><span>2:30 PM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="03:00 PM" /><span>3:00 PM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="03:30 PM" /><span>3:30 PM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="04:00 PM" /><span>4:00 PM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="04:30 PM" /><span>4:30 PM</span></label>
+                </div>
+                <div class="slot-group-label" style="margin-top:8px;">Evening</div>
+                <div class="check-grid check-grid-slots">
+                  <label class="check-item"><input type="checkbox" name="slot" value="05:00 PM" /><span>5:00 PM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="05:30 PM" /><span>5:30 PM</span></label>
+                  <label class="check-item"><input type="checkbox" name="slot" value="06:00 PM" /><span>6:00 PM</span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dp-form-error hidden" id="formError"></div>
+
+        <div class="dp-form-actions">
+          <button class="btn btn-ghost" data-close="doctorModal">Cancel</button>
+          <button class="btn btn-primary" id="saveDoctorBtn">Save Doctor</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div class="modal-overlay hidden" id="deleteModal">
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Remove Doctor</h3>
+        <button class="modal-close" data-close="deleteModal">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0 0 20px;color:var(--text-secondary);">
+          Are you sure you want to remove <strong id="deleteDoctorName"></strong>?
+          They will no longer appear in the appointment booking list.
+        </p>
+        <div class="dp-form-actions">
+          <button class="btn btn-ghost" data-close="deleteModal">Cancel</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/doctor-profile.js"></script>
+</body>
+</html>

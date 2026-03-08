@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Patients — MedAssist</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/doctor-patients.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="dp-page">
+    <div class="dp-container">
+
+      <!-- List View -->
+      <div id="listView">
+        <div class="dp-header">
+          <div>
+            <h1 class="dp-title">My Patients</h1>
+            <p class="dp-subtitle">Patients who have booked appointments with you</p>
+          </div>
+          <input type="text" id="patientSearch" class="form-control dp-search" placeholder="Search by name or email…">
+        </div>
+
+        <div id="dpAlert" class="dp-alert hidden"></div>
+
+        <div id="dpLoading" class="dp-loading">
+          <div class="dp-spinner"></div>
+          <p>Loading patients…</p>
+        </div>
+
+        <div id="dpEmpty" class="dp-empty hidden">
+          <div class="dp-empty-icon">👥</div>
+          <p class="dp-empty-text">No patients yet</p>
+          <p class="dp-empty-sub">Patients who book appointments with you will appear here</p>
+        </div>
+
+        <div id="dpGrid" class="dp-grid"></div>
+      </div>
+
+      <!-- Patient Detail View -->
+      <div id="detailView" class="hidden">
+        <div class="dp-detail-header">
+          <button class="btn btn-ghost btn-sm" id="backBtn">← Back to Patients</button>
+          <div id="detailLoading" class="dp-loading hidden">
+            <div class="dp-spinner"></div><p>Loading patient data…</p>
+          </div>
+        </div>
+
+        <div id="detailContent"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <div id="footer"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/doctor-patients.js"></script>
+</body>
+</html>

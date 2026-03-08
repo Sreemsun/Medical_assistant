@@ -1,85 +1,24 @@
 const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const Appointment = require('../models/Appointment');
+const Doctor      = require('../models/Doctor');
+const User        = require('../models/User');
 const { protect } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const router = express.Router();
 
-// ── Static doctor list (seed data) ───────────────────────────────────────────
-const DOCTORS = [
-  {
-    id: 'doc_001',
-    name: 'Dr. Sarah Mitchell',
-    specialty: 'General Practice',
-    description: 'Experienced GP with 15 years in family medicine. Handles routine check-ups, chronic disease management, and preventive care.',
-    availability: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-    slots: ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','02:00 PM','02:30 PM','03:00 PM','03:30 PM','04:00 PM'],
-  },
-  {
-    id: 'doc_002',
-    name: 'Dr. James Rowe',
-    specialty: 'Cardiologist',
-    description: 'Board-certified cardiologist specialising in heart disease, hypertension, and preventive cardiology.',
-    availability: ['Monday', 'Wednesday', 'Friday'],
-    slots: ['10:00 AM','10:30 AM','11:00 AM','11:30 AM','02:00 PM','02:30 PM','03:00 PM'],
-  },
-  {
-    id: 'doc_003',
-    name: 'Dr. Priya Nair',
-    specialty: 'Dermatologist',
-    description: 'Specialist in skin conditions, cosmetic dermatology, and skin cancer screening.',
-    availability: ['Tuesday', 'Thursday', 'Saturday'],
-    slots: ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','03:00 PM','03:30 PM','04:00 PM'],
-  },
-  {
-    id: 'doc_004',
-    name: 'Dr. Alan Torres',
-    specialty: 'Orthopaedic Surgeon',
-    description: 'Specialist in bone, joint, and musculoskeletal disorders including sports injuries and joint replacement.',
-    availability: ['Monday', 'Tuesday', 'Thursday'],
-    slots: ['09:00 AM','09:30 AM','10:00 AM','11:00 AM','11:30 AM','02:00 PM','02:30 PM','03:30 PM'],
-  },
-  {
-    id: 'doc_005',
-    name: 'Dr. Emily Chen',
-    specialty: 'Paediatrician',
-    description: 'Dedicated to children\'s health from newborns through adolescence, including vaccinations and developmental assessments.',
-    availability: ['Monday', 'Wednesday', 'Thursday', 'Friday'],
-    slots: ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','02:00 PM','02:30 PM','03:00 PM','03:30 PM'],
-  },
-  {
-    id: 'doc_006',
-    name: 'Dr. Omar Hassan',
-    specialty: 'Neurologist',
-    description: 'Specialist in disorders of the brain and nervous system including migraines, epilepsy, and stroke.',
-    availability: ['Tuesday', 'Wednesday', 'Friday'],
-    slots: ['10:00 AM','10:30 AM','11:00 AM','02:00 PM','02:30 PM','03:00 PM','04:00 PM'],
-  },
-  {
-    id: 'doc_007',
-    name: 'Dr. Linda Park',
-    specialty: 'Gynaecologist',
-    description: 'Specialises in women\'s reproductive health, obstetrics, and preventive screenings.',
-    availability: ['Monday', 'Tuesday', 'Thursday', 'Friday'],
-    slots: ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','03:00 PM','03:30 PM','04:00 PM'],
-  },
-  {
-    id: 'doc_008',
-    name: 'Dr. Raj Kapoor',
-    specialty: 'Endocrinologist',
-    description: 'Specialist in hormone-related disorders including diabetes, thyroid disease, and metabolic conditions.',
-    availability: ['Wednesday', 'Thursday', 'Friday'],
-    slots: ['10:00 AM','10:30 AM','11:00 AM','11:30 AM','02:00 PM','02:30 PM','03:00 PM'],
-  },
-];
-
 // All routes require authentication
 router.use(protect);
 
 // ── GET /api/appointments/doctors ─────────────────────────────────────────────
-router.get('/doctors', (req, res) => {
-  res.json({ success: true, doctors: DOCTORS });
+router.get('/doctors', async (req, res) => {
+  try {
+    const doctors = await Doctor.find({ active: true }).sort({ name: 1 });
+    res.json({ success: true, doctors });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // ── GET /api/appointments/available-slots ─────────────────────────────────────
@@ -92,26 +31,36 @@ router.get('/available-slots', [
   if (!errors.isEmpty()) return res.status(400).json({ success: false, message: errors.array()[0].msg });
 
   const { doctorId, date } = req.query;
-  const doctor = DOCTORS.find(d => d.id === doctorId);
+
+  let doctor;
+  try {
+    doctor = await Doctor.findOne({ _id: doctorId, active: true });
+  } catch (_) {
+    return res.status(404).json({ success: false, message: 'Doctor not found' });
+  }
   if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
-  // Check if selected date falls on a day doctor is available
+  // Check if selected date falls on a day the doctor is available
   const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
   if (!doctor.availability.includes(dayName)) {
-    return res.json({ success: true, slots: [], message: `Dr. ${doctor.name.split(' ').pop()} is not available on ${dayName}s` });
+    return res.json({
+      success: true,
+      slots: [],
+      message: `Dr. ${doctor.name.split(' ').pop()} is not available on ${dayName}s`,
+    });
   }
 
   // Find already-booked slots for this doctor on this date
   const startOfDay = new Date(date + 'T00:00:00');
   const endOfDay   = new Date(date + 'T23:59:59');
   const booked = await Appointment.find({
-    doctorId,
+    doctorId: doctorId.toString(),
     date: { $gte: startOfDay, $lte: endOfDay },
     status: { $ne: 'cancelled' },
   }).select('timeSlot');
 
   const bookedSlots = new Set(booked.map(a => a.timeSlot));
-  const available = doctor.slots.filter(s => !bookedSlots.has(s));
+  const available   = doctor.slots.filter(s => !bookedSlots.has(s));
 
   res.json({ success: true, slots: available, doctorName: doctor.name });
 });
@@ -129,7 +78,12 @@ router.post('/', [
 
   const { doctorId, date, timeSlot, reason, notes } = req.body;
 
-  const doctor = DOCTORS.find(d => d.id === doctorId);
+  let doctor;
+  try {
+    doctor = await Doctor.findOne({ _id: doctorId, active: true });
+  } catch (_) {
+    return res.status(404).json({ success: false, message: 'Doctor not found' });
+  }
   if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
   // Validate the date is not in the past
@@ -150,14 +104,14 @@ router.post('/', [
   const startOfDay = new Date(date + 'T00:00:00');
   const endOfDay   = new Date(date + 'T23:59:59');
   const conflict = await Appointment.findOne({
-    doctorId,
+    doctorId: doctorId.toString(),
     date: { $gte: startOfDay, $lte: endOfDay },
     timeSlot,
     status: { $ne: 'cancelled' },
   });
   if (conflict) return res.status(409).json({ success: false, message: 'This slot has just been booked. Please choose another.' });
 
-  // Prevent same user from double-booking the same slot
+  // Prevent same user from double-booking the same date
   const userConflict = await Appointment.findOne({
     user: req.user._id,
     date: { $gte: startOfDay, $lte: endOfDay },
@@ -167,7 +121,7 @@ router.post('/', [
 
   const appointment = await Appointment.create({
     user: req.user._id,
-    doctorId,
+    doctorId: doctorId.toString(),
     doctorName: doctor.name,
     doctorSpecialty: doctor.specialty,
     date: apptDate,
@@ -185,9 +139,59 @@ router.post('/', [
 router.get('/', async (req, res) => {
   const filter = { user: req.user._id };
   if (req.query.status) filter.status = req.query.status;
-
   const appointments = await Appointment.find(filter).sort({ date: 1 });
   res.json({ success: true, appointments });
+});
+
+// ── GET /api/appointments/doctor-appointments ──────────────────────────────────
+// Returns all appointments booked with the logged-in doctor
+router.get('/doctor-appointments', async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ email: req.user.email, active: true });
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: 'Doctor profile not found for this account.' });
+    }
+
+    const filter = { doctorId: doctor._id.toString() };
+    if (req.query.status) filter.status = req.query.status;
+
+    const appointments = await Appointment.find(filter)
+      .populate('user', 'fullName email')
+      .sort({ date: 1 });
+
+    res.json({ success: true, appointments });
+  } catch (err) {
+    logger.error(`Doctor appointments fetch error: ${err.message}`);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── PATCH /api/appointments/:id/status ────────────────────────────────────────
+// Allows a doctor to update the status of an appointment (confirm / complete / cancel)
+router.patch('/:id/status', [
+  param('id').isMongoId().withMessage('Invalid appointment id'),
+  body('status').isIn(['confirmed', 'completed', 'cancelled']).withMessage('Invalid status value'),
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, message: errors.array()[0].msg });
+
+  try {
+    const doctor = await Doctor.findOne({ email: req.user.email, active: true });
+    if (!doctor) return res.status(403).json({ success: false, message: 'Not authorised as a doctor.' });
+
+    const appointment = await Appointment.findOne({ _id: req.params.id, doctorId: doctor._id.toString() });
+    if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found.' });
+    if (appointment.status === 'cancelled') return res.status(400).json({ success: false, message: 'Cannot update a cancelled appointment.' });
+
+    appointment.status = req.body.status;
+    await appointment.save();
+
+    logger.info(`Appointment ${appointment._id} status updated to ${req.body.status} by doctor ${doctor.name}`);
+    res.json({ success: true, message: `Appointment ${req.body.status}.`, appointment });
+  } catch (err) {
+    logger.error(`Status update error: ${err.message}`);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // ── DELETE /api/appointments/:id ───────────────────────────────────────────────

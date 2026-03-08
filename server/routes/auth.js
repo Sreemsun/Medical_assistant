@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const User = require('../models/User');
+const Doctor = require('../models/Doctor');
 const { generateToken } = require('../middleware/auth');
 const { protect } = require('../middleware/auth');
 const { authLimiter, registerLimiter } = require('../middleware/rateLimiter');
@@ -13,16 +14,50 @@ const router = express.Router();
 // ── POST /api/auth/register ────────────────────────────────────────────────
 router.post('/register', registerLimiter, validateRegister, async (req, res) => {
   try {
-    const { fullName, email, password, age, gender, medicalHistory } = req.body;
+    const {
+      fullName, email, password, age, gender,
+      role,
+      // Doctor-specific fields
+      specialty, experience, bio, availability, slots,
+    } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
     }
 
-    const user = await User.create({ fullName, email, password, age, gender });
+    const isDoctor = role === 'doctor';
 
-    // Send verification email (non-blocking — fail gracefully)
+    if (isDoctor && !specialty) {
+      return res.status(400).json({ success: false, message: 'Specialty is required for doctor registration.' });
+    }
+
+    const user = await User.create({
+      fullName, email, password, age, gender,
+      role: isDoctor ? 'doctor' : 'user',
+    });
+
+    // If doctor, also create a Doctor profile
+    if (isDoctor) {
+      try {
+        await Doctor.create({
+          name:         fullName,
+          specialty:    specialty,
+          email:        email,
+          phone:        req.body.phoneNumber || '',
+          experience:   Number(experience) || 0,
+          bio:          bio || '',
+          availability: Array.isArray(availability) ? availability : [],
+          slots:        Array.isArray(slots)        ? slots        : [],
+          active:       true,
+        });
+      } catch (docErr) {
+        // Doctor profile creation failed — still continue, user account was created
+        logger.warn(`Doctor profile creation failed for ${email}: ${docErr.message}`);
+      }
+    }
+
+    // Send verification email (non-blocking)
     try {
       const verificationToken = user.getEmailVerificationToken();
       await user.save({ validateBeforeSave: false });
@@ -34,7 +69,9 @@ router.post('/register', registerLimiter, validateRegister, async (req, res) => 
     const token = generateToken(user._id);
     res.status(201).json({
       success: true,
-      message: 'Account created successfully. Please check your email to verify your account.',
+      message: isDoctor
+        ? 'Doctor account created successfully. Your profile is now available for patient bookings.'
+        : 'Account created successfully. Please check your email to verify your account.',
       token,
       user: user.toSafeObject(),
     });

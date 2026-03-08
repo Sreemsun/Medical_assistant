@@ -9,6 +9,12 @@ document.getElementById('navbar').innerHTML = buildNavbar('analytics');
 document.getElementById('footer').innerHTML = buildFooter();
 Auth.requireAuth();
 
+// ── Access control: this page is only for the patient "Afnan" ─
+const _analyticsUser = Auth.getUser();
+if (!_analyticsUser || !_analyticsUser.fullName.toLowerCase().includes('afnan')) {
+  window.location.href = 'dashboard.html';
+}
+
 // ── Monthly grouping config ────────────────────────────────────
 // Treat 768 readings as 24 months of data (32 readings/month ≈ ~1 reading/day)
 const MONTH_SIZE = 32;
@@ -77,6 +83,65 @@ function scaleOpts(t) {
     border:{ display: false },
   };
 }
+
+// ── User Reading state (persisted in localStorage) ────────────
+const LS_READING_KEY = 'medassist_analytics_reading';
+let userReadings = JSON.parse(localStorage.getItem(LS_READING_KEY) || '{}');
+
+// ── Collapsible reading panel toggle ──────────────────────────
+document.getElementById('readingToggle').addEventListener('click', () => {
+  const body  = document.getElementById('readingBody');
+  const arrow = document.getElementById('readingArrow');
+  const open  = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  arrow.classList.toggle('open', !open);
+});
+
+// ── Render reading input fields ────────────────────────────────
+function renderReadingForm(data) {
+  document.getElementById('readingInputs').innerHTML = data.columns.map(col => `
+    <div class="reading-field">
+      <label>
+        ${col.label}
+        <span class="reading-unit">(${col.unit})</span>
+      </label>
+      <input
+        type="number"
+        id="ri_${col.key}"
+        class="form-control"
+        step="any" min="0"
+        placeholder="Your value"
+        value="${userReadings[col.key] !== undefined ? userReadings[col.key] : ''}"
+      />
+    </div>
+  `).join('');
+}
+
+// ── Plot button ────────────────────────────────────────────────
+document.getElementById('plotReadingBtn').addEventListener('click', () => {
+  if (!_cachedData) return;
+  const readings = {};
+  _cachedData.columns.forEach(col => {
+    const val = parseFloat(document.getElementById(`ri_${col.key}`)?.value);
+    if (!isNaN(val) && val > 0) readings[col.key] = +val.toFixed(2);
+  });
+  userReadings = readings;
+  localStorage.setItem(LS_READING_KEY, JSON.stringify(userReadings));
+  refreshCharts(_cachedData);
+});
+
+// ── Clear button ───────────────────────────────────────────────
+document.getElementById('clearReadingBtn').addEventListener('click', () => {
+  userReadings = {};
+  localStorage.removeItem(LS_READING_KEY);
+  if (_cachedData) {
+    _cachedData.columns.forEach(col => {
+      const el = document.getElementById(`ri_${col.key}`);
+      if (el) el.value = '';
+    });
+    refreshCharts(_cachedData);
+  }
+});
 
 // ── Summary cards ──────────────────────────────────────────────
 function renderSummary(data) {
@@ -271,47 +336,64 @@ function renderTrendCharts(data) {
       const diabeticMonthly = groupByMonthNullable(diabeticVals, zeroOK);
       const healthyMonthly  = groupByMonthNullable(healthyVals, zeroOK);
 
-      makeChart(canvasId, 'line', {
-        labels,
-        datasets: [
-          {
-            label: 'Overall',
-            data: overallMonthly,
-            borderColor: color,
-            backgroundColor: color + '18',
-            fill: true,
-            borderWidth: 2,
-            pointRadius: 3,
-            pointHoverRadius: 5,
-            tension: 0.35,
-            spanGaps: true,
-          },
-          {
-            label: 'Diabetic avg',
-            data: diabeticMonthly,
-            borderColor: COL_DIABETIC,
-            backgroundColor: 'transparent',
-            borderWidth: 1.5,
-            borderDash: [5, 3],
-            pointRadius: 2,
-            pointHoverRadius: 4,
-            tension: 0.35,
-            spanGaps: true,
-          },
-          {
-            label: 'Non-diabetic avg',
-            data: healthyMonthly,
-            borderColor: COL_HEALTHY,
-            backgroundColor: 'transparent',
-            borderWidth: 1.5,
-            borderDash: [5, 3],
-            pointRadius: 2,
-            pointHoverRadius: 4,
-            tension: 0.35,
-            spanGaps: true,
-          },
-        ],
-      }, {
+      // Build datasets array
+      const datasets = [
+        {
+          label: 'Overall',
+          data: overallMonthly,
+          borderColor: color,
+          backgroundColor: color + '18',
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.35,
+          spanGaps: true,
+        },
+        {
+          label: 'Diabetic avg',
+          data: diabeticMonthly,
+          borderColor: COL_DIABETIC,
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [5, 3],
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.35,
+          spanGaps: true,
+        },
+        {
+          label: 'Non-diabetic avg',
+          data: healthyMonthly,
+          borderColor: COL_HEALTHY,
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [5, 3],
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.35,
+          spanGaps: true,
+        },
+      ];
+
+      // Add user reading as a horizontal reference line if available
+      if (userReadings[col.key] !== undefined) {
+        const refVal = userReadings[col.key];
+        datasets.push({
+          label: `Your Reading (${refVal} ${col.unit})`,
+          data: Array(NUM_MONTHS).fill(refVal),
+          borderColor: '#f59e0b',
+          backgroundColor: 'transparent',
+          borderWidth: 2.5,
+          borderDash: [10, 4],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0,
+          spanGaps: true,
+        });
+      }
+
+      makeChart(canvasId, 'line', { labels, datasets }, {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 300 },
@@ -409,6 +491,76 @@ function refreshCharts(data) {
   renderStatsTable(data);
 }
 
+// ── ML Predictions ─────────────────────────────────────────────
+async function loadPredictions() {
+  const sec = document.getElementById('predictSection');
+  sec.style.display = 'block'; // show section with loading spinner
+
+  const res = await api.get('/analytics/predict');
+  if (!res?.ok) {
+    document.getElementById('predictGrid').innerHTML =
+      `<p style="color:#dc2626;font-size:0.85rem;">Failed to load predictions.</p>`;
+    return;
+  }
+  renderPredictions(res.data);
+}
+
+function renderPredictions({ predictions, columns, predictMonth }) {
+  const grid = document.getElementById('predictGrid');
+
+  const trendIcon  = { up: '↑', down: '↓', stable: '→' };
+  const trendClass = { up: 'predict-up', down: 'predict-down', stable: 'predict-stable' };
+
+  grid.innerHTML = columns.map((col, ci) => {
+    const p     = predictions[col.key];
+    const color = FEAT_COLORS[ci % FEAT_COLORS.length];
+
+    const groupRow = (label, grp) => {
+      const d    = p[grp];
+      const icon = trendIcon[d.trend];
+      const tcls = trendClass[d.trend];
+      return `
+        <div class="predict-row">
+          <span class="predict-row-label">${label}</span>
+          <span class="predict-row-val">
+            <strong>${d.value}</strong>
+            <span class="predict-unit">${col.unit}</span>
+          </span>
+          <span class="predict-change ${tcls}">${icon} ${d.change >= 0 ? '+' : ''}${d.change}</span>
+          <span class="predict-r2">R²&nbsp;${d.r2}</span>
+        </div>
+      `;
+    };
+
+    const overallTcls = trendClass[p.overall.trend];
+    const overallIcon = trendIcon[p.overall.trend];
+
+    return `
+      <div class="predict-card" style="border-top-color:${color}">
+        <div class="predict-card-header">
+          <span class="predict-card-title">${col.label}</span>
+          <span class="predict-card-unit">${col.unit}</span>
+        </div>
+        <div class="predict-main">
+          <span class="predict-main-val" style="color:${color}">${p.overall.value}</span>
+          <span class="predict-card-unit">${col.unit}</span>
+          <span class="predict-change ${overallTcls}" style="font-size:1.05rem;margin-left:4px">
+            ${overallIcon} ${p.overall.change >= 0 ? '+' : ''}${p.overall.change}
+          </span>
+        </div>
+        <div class="predict-last">
+          Last month (Dec 2024): <strong>${p.overall.lastMonth}</strong>
+          &nbsp;·&nbsp; R²&nbsp;<strong>${p.overall.r2}</strong>
+        </div>
+        <div class="predict-rows">
+          ${groupRow('Diabetic', 'diabetic')}
+          ${groupRow('Non-diabetic', 'healthy')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 // ── Full render ────────────────────────────────────────────────
 function renderAll(data) {
   // Initialise all features as selected
@@ -417,6 +569,10 @@ function renderAll(data) {
   document.getElementById('anContent').style.display = 'block';
   renderSummary(data);
   renderFeatureFilter(data);
+  renderReadingForm(data);
+
+  // Load ML predictions in parallel (non-blocking)
+  loadPredictions();
 
   requestAnimationFrame(() => {
     renderOverview(data);
