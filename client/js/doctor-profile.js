@@ -101,6 +101,8 @@ function renderGrid() {
       <div class="doc-slots-count">
         ${doc.slots?.length ? `${doc.slots.length} time slot${doc.slots.length !== 1 ? 's' : ''} available` : 'No time slots set'}
       </div>
+      <a href="video-consult.html?room=medassist-${encodeURIComponent(doc._id)}&doctorName=${encodeURIComponent(doc.name)}"
+         class="btn-video doc-video-btn">🎥 Video Consult</a>
     </div>
   `).join('');
 

@@ -159,9 +159,20 @@
   border: 1px solid var(--border);
 }
 
-.doctor-card-btn {
+.doctor-card-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-top: auto;
+}
+
+.doctor-card-btn {
   width: 100%;
+}
+
+.doctor-card-btns .btn-video {
+  width: 100%;
+  justify-content: center;
 }
 
 /* ── My Appointments Section ─────────────────────────────────── */

@@ -15,34 +15,6 @@ if (!_analyticsUser || !_analyticsUser.fullName.toLowerCase().includes('afnan'))
   window.location.href = 'dashboard.html';
 }
 
-// ── Monthly grouping config ────────────────────────────────────
-// Treat 768 readings as 24 months of data (32 readings/month ≈ ~1 reading/day)
-const MONTH_SIZE = 32;
-const NUM_MONTHS = Math.ceil(768 / MONTH_SIZE); // 24 months
-
-function makeMonthLabels() {
-  const base = new Date(2023, 0); // Jan 2023
-  return Array.from({ length: NUM_MONTHS }, (_, i) => {
-    const d = new Date(base.getFullYear(), base.getMonth() + i);
-    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-  });
-}
-
-// Group raw values into monthly averages
-// zeroOK = false means zeros are missing data and should be excluded
-function groupByMonth(values, zeroOK = false) {
-  const months = [];
-  for (let i = 0; i < values.length; i += MONTH_SIZE) {
-    const chunk = values.slice(i, i + MONTH_SIZE);
-    const valid = zeroOK ? chunk : chunk.filter(v => v > 0);
-    const avg   = valid.length
-      ? +(valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(2)
-      : null; // null = no valid data that month
-    months.push(avg);
-  }
-  return months;
-}
-
 // ── Colours ────────────────────────────────────────────────────
 const COL_DIABETIC = '#ef4444';
 const COL_HEALTHY  = '#10b981';
@@ -59,30 +31,6 @@ let selectedTrendFeature = null;
 
 // ── Selected overview feature (explicit selector — no auto-render) ──
 let selectedOverviewFeature = null;
-
-// ── Display helpers: Jan 2024 – Feb 2025 (14 months) + Mar 2025 current ──
-// 14 historical labels: Jan 2024 … Feb 2025
-function getHistoricalLabels() {
-  return Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(2024, i); // i=12 → Jan 2025, i=13 → Feb 2025
-    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-  });
-}
-
-// Full 15-label set for charts: 14 historical + "Mar '25" (current reading slot)
-function getChartLabels() {
-  return [...getHistoricalLabels(), "Mar '25"];
-}
-
-// 14-month overall slice: raw months 12–23 + 2 synthetic values (Jan/Feb 2025)
-function getHistoricalSlice(monthlyArr, synth) {
-  return [...monthlyArr.slice(12, 24), ...synth];
-}
-
-// 14-month outcome-split slice: raw months 12–23 + nulls (no outcome split for synthetic months)
-function getOutcomeSlice(monthlyArr) {
-  return [...monthlyArr.slice(12, 24), null, null];
-}
 
 // ── Chart instance cache ───────────────────────────────────────
 const _charts = {};
@@ -378,7 +326,7 @@ document.getElementById('plotReadingBtn').addEventListener('click', () => {
   const count = Object.keys(readings).length;
   const fb = document.getElementById('readingFeedback');
   fb.textContent = count > 0
-    ? `Your reading plotted as a highlighted dot at Mar '25 on ${count} chart${count > 1 ? 's' : ''}.`
+    ? `Your reading plotted as a highlighted dot at ${_cachedData.predictLabel} on ${count} chart${count > 1 ? 's' : ''}.`
     : 'No valid values entered. Please fill in at least one field.';
   fb.style.color = count > 0 ? '#10b981' : '#f59e0b';
   fb.style.display = 'block';
@@ -408,7 +356,7 @@ function renderSummary(data) {
     <div class="sum-card total">
       <div class="sum-label">Total Readings</div>
       <div class="sum-value">${data.total}</div>
-      <p class="sum-desc">${NUM_MONTHS} months of data</p>
+      <p class="sum-desc">${data.monthlyLabels.length} months of data</p>
     </div>
     <div class="sum-card diabetic">
       <div class="sum-label">Diabetic Readings</div>
@@ -534,13 +482,11 @@ function renderOverviewChart(data) {
 
   requestAnimationFrame(() => {
     const t      = theme();
-    const labels = getChartLabels();
+    const labels = [...data.monthlyLabels, ...data.syntheticLabels, data.predictLabel];
 
-    const overallMonthly  = getHistoricalSlice(groupByMonth(data.series[col.key], zeroOK), data.syntheticMonthlyAvgs[col.key]);
-    const diabeticVals    = data.series[col.key].map((v, i) => data.outcomeArr[i] === 1 ? v : null);
-    const healthyVals     = data.series[col.key].map((v, i) => data.outcomeArr[i] === 0 ? v : null);
-    const diabeticMonthly = getOutcomeSlice(groupByMonthNullable(diabeticVals, zeroOK));
-    const healthyMonthly  = getOutcomeSlice(groupByMonthNullable(healthyVals, zeroOK));
+    const overallMonthly  = [...data.monthlyData[col.key].overall,  ...data.syntheticMonthlyAvgs[col.key]];
+    const diabeticMonthly = [...data.monthlyData[col.key].diabetic, ...Array(data.syntheticLabels.length).fill(null)];
+    const healthyMonthly  = [...data.monthlyData[col.key].healthy,  ...Array(data.syntheticLabels.length).fill(null)];
 
     const datasets = [
       {
@@ -584,13 +530,13 @@ function renderOverviewChart(data) {
     if (userReadings[col.key] !== undefined) {
       const refVal = userReadings[col.key];
       datasets.push({
-        label: `Mar '25 Reading (${refVal} ${col.unit})`,
-        data: [...Array(14).fill(null), refVal],
+        label: `${data.predictLabel} Reading (${refVal} ${col.unit})`,
+        data: [...Array(labels.length - 1).fill(null), refVal],
         borderColor: '#f59e0b',
         backgroundColor: '#f59e0b',
         borderWidth: 0,
-        pointRadius: [...Array(14).fill(0), 10],
-        pointHoverRadius: [...Array(14).fill(0), 12],
+        pointRadius: [...Array(labels.length - 1).fill(0), 10],
+        pointHoverRadius: [...Array(labels.length - 1).fill(0), 12],
         pointBackgroundColor: '#f59e0b',
         pointBorderColor: '#fff',
         pointBorderWidth: 2.5,
@@ -708,13 +654,11 @@ function renderSingleTrendChart(data) {
 
   requestAnimationFrame(() => {
     const t      = theme();
-    const labels = getChartLabels();
+    const labels = [...data.monthlyLabels, ...data.syntheticLabels, data.predictLabel];
 
-    const overallMonthly  = getHistoricalSlice(groupByMonth(data.series[col.key], zeroOK), data.syntheticMonthlyAvgs[col.key]);
-    const diabeticVals    = data.series[col.key].map((v, i) => data.outcomeArr[i] === 1 ? v : null);
-    const healthyVals     = data.series[col.key].map((v, i) => data.outcomeArr[i] === 0 ? v : null);
-    const diabeticMonthly = getOutcomeSlice(groupByMonthNullable(diabeticVals, zeroOK));
-    const healthyMonthly  = getOutcomeSlice(groupByMonthNullable(healthyVals, zeroOK));
+    const overallMonthly  = [...data.monthlyData[col.key].overall,  ...data.syntheticMonthlyAvgs[col.key]];
+    const diabeticMonthly = [...data.monthlyData[col.key].diabetic, ...Array(data.syntheticLabels.length).fill(null)];
+    const healthyMonthly  = [...data.monthlyData[col.key].healthy,  ...Array(data.syntheticLabels.length).fill(null)];
 
     const datasets = [
       {
@@ -758,13 +702,13 @@ function renderSingleTrendChart(data) {
     if (userReadings[col.key] !== undefined) {
       const refVal = userReadings[col.key];
       datasets.push({
-        label: `Mar '25 Reading (${refVal} ${col.unit})`,
-        data: [...Array(14).fill(null), refVal],
+        label: `${data.predictLabel} Reading (${refVal} ${col.unit})`,
+        data: [...Array(labels.length - 1).fill(null), refVal],
         borderColor: '#f59e0b',
         backgroundColor: '#f59e0b',
         borderWidth: 0,
-        pointRadius: [...Array(14).fill(0), 10],
-        pointHoverRadius: [...Array(14).fill(0), 12],
+        pointRadius: [...Array(labels.length - 1).fill(0), 10],
+        pointHoverRadius: [...Array(labels.length - 1).fill(0), 12],
         pointBackgroundColor: '#f59e0b',
         pointBorderColor: '#fff',
         pointBorderWidth: 2.5,
@@ -808,20 +752,6 @@ function renderSingleTrendChart(data) {
       },
     });
   });
-}
-
-// Group values into monthly averages, treating null/missing differently
-function groupByMonthNullable(values, zeroOK = false) {
-  const months = [];
-  for (let i = 0; i < values.length; i += MONTH_SIZE) {
-    const chunk = values.slice(i, i + MONTH_SIZE).filter(v => v !== null);
-    const valid = zeroOK ? chunk : chunk.filter(v => v > 0);
-    const avg   = valid.length
-      ? +(valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(2)
-      : null;
-    months.push(avg);
-  }
-  return months;
 }
 
 // ── Stats table ────────────────────────────────────────────────
@@ -885,7 +815,7 @@ async function loadPredictions() {
   renderPredictions(res.data);
 }
 
-function renderPredictions({ predictions, columns, predictMonth }) {
+function renderPredictions({ predictions, columns, predictMonth, lastMonthLabel }) {
   const grid = document.getElementById('predictGrid');
 
   const trendIcon  = { up: '↑', down: '↓', stable: '→' };
@@ -929,7 +859,7 @@ function renderPredictions({ predictions, columns, predictMonth }) {
           </span>
         </div>
         <div class="predict-last">
-          Last month (Dec 2024): <strong>${p.overall.lastMonth}</strong>
+          Last month (${lastMonthLabel}): <strong>${p.overall.lastMonth}</strong>
           &nbsp;·&nbsp; R²&nbsp;<strong>${p.overall.r2}</strong>
         </div>
         <div class="predict-rows">

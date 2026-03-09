@@ -105,7 +105,10 @@ function buildDoctorCard(doc, colorIdx) {
       <div class="doctor-availability">
         ${doc.availability.map(d => `<span class="avail-day">${d.slice(0,3)}</span>`).join('')}
       </div>
-      <button class="btn btn-primary doctor-card-btn" data-docid="${doc.id}">Book Appointment</button>
+      <div class="doctor-card-btns">
+        <button class="btn btn-primary doctor-card-btn" data-docid="${doc.id}">Book Appointment</button>
+        <a href="video-consult.html?room=medassist-${encodeURIComponent(doc.id)}&doctorName=${encodeURIComponent(doc.name)}" class="btn-video">🎥 Video Consult</a>
+      </div>
     </div>`;
 }
 

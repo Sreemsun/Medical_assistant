@@ -1,0 +1,268 @@
+/* ────────────────────────────────────────────────────────────────
+   video-consult.css  –  Video consultation page styles
+──────────────────────────────────────────────────────────────── */
+
+/* ── Page layout ─────────────────────────────────────────────── */
+.vc-page {
+  min-height: calc(100vh - 64px);
+  background: var(--bg-secondary);
+  padding: 40px 0 80px;
+}
+
+.vc-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Pre-join screen ─────────────────────────────────────────── */
+.vc-prejoin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 65vh;
+}
+
+.vc-prejoin-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 36px;
+  max-width: 500px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.vc-icon {
+  font-size: 3rem;
+  line-height: 1;
+  background: rgba(99,102,241,0.1);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vc-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.vc-doctor-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0;
+}
+
+/* ── Info box ────────────────────────────────────────────────── */
+.vc-info-box {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.vc-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.84rem;
+}
+
+.vc-info-label {
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 90px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vc-info-value {
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+/* ── Share link row ──────────────────────────────────────────── */
+.vc-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.vc-share-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.vc-share-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.73rem;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-family: monospace;
+  cursor: text;
+}
+
+/* ── Checklist ───────────────────────────────────────────────── */
+.vc-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+}
+
+.vc-check-item {
+  font-size: 0.78rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* ── Pre-join actions ────────────────────────────────────────── */
+.vc-prejoin-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Live video room ─────────────────────────────────────────── */
+.vc-room {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  min-height: 560px;
+}
+
+.vc-room.hidden { display: none; }
+
+.vc-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vc-room-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vc-live-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  padding: 3px 10px;
+  border-radius: 50px;
+  animation: vc-pulse 2s infinite;
+}
+
+@keyframes vc-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+.vc-room-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.vc-room-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Jitsi frame container ───────────────────────────────────── */
+.vc-frame {
+  flex: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #0f172a;
+  border: 1px solid var(--border);
+}
+
+.vc-frame iframe {
+  border: none;
+  display: block;
+}
+
+/* ── Error state ─────────────────────────────────────────────── */
+.vc-load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  padding: 40px;
+  text-align: center;
+}
+
+/* ── Video consult button on doctor cards ────────────────────── */
+.btn-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(99,102,241,0.1);
+  color: var(--primary);
+  border: 1.5px solid rgba(99,102,241,0.3);
+  border-radius: var(--radius);
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-video:hover {
+  background: rgba(99,102,241,0.18);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+[data-theme="dark"] .btn-video {
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.35);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .vc-prejoin-card { padding: 28px 20px; }
+  .vc-room         { height: calc(100vh - 160px); min-height: 400px; }
+  .vc-prejoin-actions { flex-direction: column; width: 100%; }
+  .vc-prejoin-actions .btn { width: 100%; justify-content: center; }
+}
