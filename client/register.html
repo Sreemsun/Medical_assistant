@@ -294,9 +294,9 @@
 
   <script src="js/utils.js"></script>
   <script>
+    Auth.redirectIfLoggedIn();
     document.getElementById('navbar-placeholder').innerHTML = buildNavbar('register');
     document.getElementById('footer-placeholder').innerHTML = buildFooter();
-    Auth.redirectIfLoggedIn();
 
     // ── Role management ──────────────────────────────────────────
     const ROLE_CONTENT = {

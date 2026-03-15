@@ -92,9 +92,9 @@
 
   <script src="js/utils.js"></script>
   <script>
+    Auth.redirectIfLoggedIn();
     document.getElementById('navbar-placeholder').innerHTML = buildNavbar('login');
     document.getElementById('footer-placeholder').innerHTML = buildFooter();
-    Auth.redirectIfLoggedIn();
 
     // Password toggle
     const pwInput = document.getElementById('password');
