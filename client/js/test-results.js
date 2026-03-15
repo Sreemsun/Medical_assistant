@@ -137,7 +137,7 @@ function renderList() {
     const fileHtml = (r.attachments?.length)
       ? `<div class="tr-file-link">
           ${r.attachments.map(a =>
-            `<a href="http://localhost:5000${a.path}" target="_blank" class="tr-attach-link">📎 ${escHtml(a.filename)}</a>`
+            `<a href="http://localhost:5001${a.path}" target="_blank" class="tr-attach-link">📎 ${escHtml(a.filename)}</a>`
           ).join('')}
         </div>`
       : '';

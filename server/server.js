@@ -18,6 +18,7 @@ const analyticsRoutes   = require('./routes/analytics');
 const doctorRoutes      = require('./routes/doctors');
 const recordRoutes      = require('./routes/records');
 const messageRoutes     = require('./routes/messages');
+const videoRoutes       = require('./routes/video');
 
 const app = express();
 
@@ -26,13 +27,17 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com", "meet.jit.si", "*.jitsi.net", "sdk.twilio.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
       fontSrc: ["'self'", "fonts.gstatic.com", "cdnjs.cloudflare.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:", "*.jitsi.net", "meet.jit.si"],
+      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5001", "wss://*.jitsi.net", "https://*.jitsi.net", "wss://meet.jit.si", "https://meet.jit.si", "wss://*.twilio.com", "https://*.twilio.com"],
+      frameSrc: ["'self'", "meet.jit.si", "*.jitsi.net"],
+      mediaSrc: ["'self'", "blob:", "mediastream:"],
+      workerSrc: ["'self'", "blob:"],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
 // Global rate limiting
@@ -67,10 +72,21 @@ app.use('/api/analytics',   analyticsRoutes);
 app.use('/api/doctors',     doctorRoutes);
 app.use('/api/records',     recordRoutes);
 app.use('/api/messages',    messageRoutes);
+app.use('/api/video',       videoRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'MedAssist API is running', timestamp: new Date().toISOString() });
+});
+
+// ─── Serve Frontend ──────────────────────────────────────────────────────────
+const clientPath = path.join(__dirname, '..', 'client');
+app.use(express.static(clientPath));
+
+// Clean URLs — serve .html files without extension
+app.get('/:page', (req, res, next) => {
+  const file = path.join(clientPath, `${req.params.page}.html`);
+  res.sendFile(file, err => { if (err) next(); });
 });
 
 // ─── Global Error Handler ───────────────────────────────────────────────────

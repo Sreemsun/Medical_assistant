@@ -101,8 +101,10 @@ function renderGrid() {
       <div class="doc-slots-count">
         ${doc.slots?.length ? `${doc.slots.length} time slot${doc.slots.length !== 1 ? 's' : ''} available` : 'No time slots set'}
       </div>
-      <a href="video-consult.html?room=medassist-${encodeURIComponent(doc._id)}&doctorName=${encodeURIComponent(doc.name)}"
-         class="btn-video doc-video-btn">🎥 Video Consult</a>
+      <button class="btn-video doc-video-btn vc-request-btn"
+              data-docid="${doc._id}" data-docname="${escHtml(doc.name)}">
+        🎥 Request Video Consult
+      </button>
     </div>
   `).join('');
 
@@ -113,7 +115,35 @@ function renderGrid() {
   grid.querySelectorAll('.doc-btn.del').forEach(btn =>
     btn.addEventListener('click', () => openDeleteModal(btn.dataset.id, btn.dataset.name))
   );
-}
+
+  // Wire video consult request buttons
+  grid.querySelectorAll('.vc-request-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const doctorId   = btn.dataset.docid;
+      const doctorName = btn.dataset.docname;
+
+      btn.disabled    = true;
+      btn.textContent = 'Sending request...';
+
+      const res = await api.post('/video/request', { doctorId, doctorName });
+
+      if (res && res.ok) {
+        Toast.success('Video consultation request sent! Waiting for doctor to join...');
+        btn.textContent = '⏳ Request Sent';
+
+        // Patient joins the room and waits
+        setTimeout(() => {
+          window.location.href =
+            `/video-consult?room=${encodeURIComponent(res.data.roomName)}&doctorName=${encodeURIComponent(doctorName)}&requestId=${res.data.requestId}`;
+        }, 1500);
+      } else {
+        Toast.error(res?.data?.message || 'Failed to send request.');
+        btn.disabled    = false;
+        btn.textContent = '🎥 Request Video Consult';
+      }
+    });
+  });
+} // end renderGrid
 
 // ── Form helpers ───────────────────────────────────────────────
 function getChecked(name) {

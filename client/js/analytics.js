@@ -206,6 +206,22 @@ function renderReadingAlerts(readings, data) {
         </span>
       </div>` : '';
 
+    const predVal = _predictedValues?.[col.key] ?? null;
+    let predCompHTML = '';
+    if (predVal !== null) {
+      const diff      = +(val - predVal).toFixed(2);
+      const diffSign  = diff > 0 ? '+' : '';
+      const diffColor = diff > 0 ? '#ef4444' : diff < 0 ? '#10b981' : '#64748b';
+      const diffLabel = diff > 0 ? 'above prediction' : diff < 0 ? 'below prediction' : 'matches prediction';
+      predCompHTML = `
+        <div class="ra-comparison" style="margin-top:6px;border-top:1px solid rgba(128,128,128,0.15);padding-top:6px;">
+          <span>ML predicted (next month): <strong>${predVal}</strong>${col.unit ? ' ' + col.unit : ''}</span>
+          <span class="ra-closer" style="color:${diffColor}">
+            Your reading is <strong>${diffSign}${diff}</strong> ${col.unit} ${diffLabel}
+          </span>
+        </div>`;
+    }
+
     return `
       <div class="ra-card" style="border-color:${cfg.border};background:${cfg.bg}">
         <div class="ra-card-top">
@@ -220,6 +236,7 @@ function renderReadingAlerts(readings, data) {
         <p class="ra-range-text">${classification.text}</p>
         <p class="ra-advice">${advice}</p>
         ${compHTML}
+        ${predCompHTML}
       </div>`;
   }).join('');
 
@@ -232,8 +249,8 @@ function renderReadingAlerts(readings, data) {
     <div class="ra-grid">${cards}</div>`;
   section.style.display = 'block';
 
-  // Show doctor popup if any values are severe or moderate
-  if (severeCount > 0 || mediumCount > 0) showDoctorModal(results);
+  // Show doctor popup only for severe values
+  if (severeCount > 0) showDoctorModal(results);
 }
 
 // ── Doctor consultation modal ──────────────────────────────────
@@ -816,6 +833,12 @@ async function loadPredictions() {
 }
 
 function renderPredictions({ predictions, columns, predictMonth, lastMonthLabel }) {
+  // Store for use in reading-vs-prediction comparison
+  _predictedValues = {};
+  columns.forEach(col => {
+    _predictedValues[col.key] = predictions[col.key]?.overall?.value ?? null;
+  });
+
   const grid = document.getElementById('predictGrid');
 
   const trendIcon  = { up: '↑', down: '↓', stable: '→' };
@@ -893,6 +916,7 @@ function renderAll(data) {
 
 // ── Fetch ──────────────────────────────────────────────────────
 let _cachedData = null;
+let _predictedValues = null; // populated when ML predictions load
 
 async function loadAnalytics() {
   const loading = document.getElementById('anLoading');

@@ -9,6 +9,7 @@ document.getElementById('footer').innerHTML = buildFooter();
 Auth.requireAuth();
 
 const currentUser = Auth.getUser();
+const doctorName  = currentUser?.fullName || 'Doctor';
 if (!currentUser || currentUser.role !== 'doctor') {
   window.location.href = 'dashboard.html';
 }
@@ -96,6 +97,7 @@ function renderGrid(list) {
         </div>
 
         <button class="btn btn-primary btn-sm dp-view-btn" data-id="${p._id}">View Profile →</button>
+        <a href="/video-consult?room=consult-${p._id}&doctorName=${encodeURIComponent(doctorName)}" class="btn btn-success btn-sm" style="margin-top:6px;display:block;text-align:center;">🎥 Video Consult</a>
       </div>
     `;
   }).join('');
@@ -222,7 +224,7 @@ function renderPatientDetail(p, appointments) {
     const fileHtml = (r.attachments?.length)
       ? `<div class="dp-rec-files">
           ${r.attachments.map(a =>
-            `<a href="http://localhost:5000${a.path}" target="_blank" class="dp-rec-attach">📎 ${escHtml(a.filename)}</a>`
+            `<a href="http://localhost:5001${a.path}" target="_blank" class="dp-rec-attach">📎 ${escHtml(a.filename)}</a>`
           ).join('')}
         </div>`
       : '';
@@ -269,6 +271,10 @@ function renderPatientDetail(p, appointments) {
           ${p.bloodType ? ` · Blood type <strong>${p.bloodType}</strong>` : ''}
           ${p.dateOfBirth ? ` · DOB ${fmtDate(p.dateOfBirth)}` : ''}
         </p>
+        <a href="/video-consult?room=consult-${p._id}&doctorName=${encodeURIComponent(doctorName)}"
+           class="btn btn-success btn-sm" style="margin-top:10px;display:inline-block;">
+          🎥 Start Video Consultation
+        </a>
       </div>
     </div>
 
@@ -358,3 +364,72 @@ function capitalize(str) {
 
 // ── Boot ───────────────────────────────────────────────────────
 loadPatients();
+
+// ── Video Request Notifications (doctor polling) ────────────────
+(function initVideoNotifications() {
+  // Only run for doctor role
+  if (!currentUser || currentUser.role !== 'doctor') return;
+
+  const banner     = document.getElementById('vcNotifBanner');
+  const notifText  = document.getElementById('vcNotifText');
+  const joinBtn    = document.getElementById('vcNotifJoinBtn');
+  const dismissBtn = document.getElementById('vcNotifDismissBtn');
+
+  if (!banner) return;
+
+  let currentRequest  = null;
+  let dismissed       = false;
+  let lastRequestId   = null;
+
+  async function pollVideoRequests() {
+    const res = await api.get('/video/requests/pending');
+    if (!res?.ok || !res.data?.requests?.length) {
+      // No pending requests — hide banner
+      banner.style.display = 'none';
+      currentRequest = null;
+      dismissed = false;
+      lastRequestId = null;
+      return;
+    }
+
+    const req = res.data.requests[0]; // Most recent pending request
+
+    // If it's a new request reset dismissed flag
+    if (req._id !== lastRequestId) {
+      dismissed = false;
+      lastRequestId = req._id;
+    }
+
+    if (dismissed) return;
+
+    currentRequest = req;
+    notifText.textContent = `📹 ${req.patientName} is requesting a video consultation`;
+    banner.style.display = 'flex';
+  }
+
+  joinBtn.addEventListener('click', async () => {
+    if (!currentRequest) return;
+    joinBtn.disabled    = true;
+    joinBtn.textContent = 'Joining…';
+
+    const res = await api.put(`/video/request/${currentRequest._id}/accept`);
+    if (res?.ok) {
+      banner.style.display = 'none';
+      const url = `/video-consult?room=${encodeURIComponent(res.data.roomName)}&doctorName=${encodeURIComponent(doctorName)}`;
+      window.location.href = url;
+    } else {
+      joinBtn.disabled    = false;
+      joinBtn.textContent = 'Join';
+      Toast.error(res?.data?.message || 'Failed to join consultation.');
+    }
+  });
+
+  dismissBtn.addEventListener('click', () => {
+    dismissed = true;
+    banner.style.display = 'none';
+  });
+
+  // Poll every 5 seconds
+  pollVideoRequests();
+  setInterval(pollVideoRequests, 5000);
+})();

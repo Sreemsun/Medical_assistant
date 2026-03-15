@@ -132,9 +132,9 @@ function avgOfGroup(map, ym, key) {
 // ── GET /api/analytics/diabetes ───────────────────────────────
 router.get('/diabetes', (req, res) => {
   try {
-    const csvPath = path.join(__dirname, '../../dataset/health_timeseries.csv');
+    const csvPath = path.join(__dirname, '../../dataset/health_timeseries_6years.csv');
     if (!fs.existsSync(csvPath)) {
-      return res.status(404).json({ success: false, message: 'health_timeseries.csv not found in dataset/ folder.' });
+      return res.status(404).json({ success: false, message: 'health_timeseries_6years.csv not found in dataset/ folder.' });
     }
 
     const rows = parseCSV(fs.readFileSync(csvPath, 'utf-8'));
@@ -214,9 +214,9 @@ router.get('/diabetes', (req, res) => {
 // ── GET /api/analytics/predict ────────────────────────────────
 router.get('/predict', (req, res) => {
   try {
-    const csvPath = path.join(__dirname, '../../dataset/health_timeseries.csv');
+    const csvPath = path.join(__dirname, '../../dataset/health_timeseries_6years.csv');
     if (!fs.existsSync(csvPath)) {
-      return res.status(404).json({ success: false, message: 'health_timeseries.csv not found in dataset/ folder.' });
+      return res.status(404).json({ success: false, message: 'health_timeseries_6years.csv not found in dataset/ folder.' });
     }
 
     const rows = parseCSV(fs.readFileSync(csvPath, 'utf-8'));

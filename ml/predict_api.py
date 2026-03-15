@@ -40,7 +40,7 @@ KEYS = [
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(script_dir, "health_forecast_model.pkl")
-    data_path  = os.path.join(script_dir, "..", "dataset", "health_timeseries.csv")
+    data_path  = os.path.join(script_dir, "..", "dataset", "health_timeseries_6years.csv")
 
     if len(sys.argv) < 2:
         print(json.dumps({"error": "No time indices provided"}))
