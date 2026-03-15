@@ -52,7 +52,7 @@ const api = {
 
     try {
       const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 15000); // 15 s timeout
+      const timeoutId  = setTimeout(() => controller.abort(), 60000); // 60 s timeout (allows for cold start)
 
       const res = await fetch(`${API_BASE}${endpoint}`, { ...options, signal: controller.signal });
       clearTimeout(timeoutId);
