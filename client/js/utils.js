@@ -29,13 +29,13 @@ const Auth = {
   isLoggedIn: () => !!Auth.getToken(),
   logout: () => {
     Auth.removeToken();
-    window.location.href = '/login.html';
+    window.location.replace('/login.html');
   },
   requireAuth: () => {
-    if (!Auth.isLoggedIn()) window.location.href = '/login.html';
+    if (!Auth.isLoggedIn()) window.location.replace('/login.html');
   },
   redirectIfLoggedIn: () => {
-    if (Auth.isLoggedIn()) window.location.href = '/dashboard.html';
+    if (Auth.isLoggedIn()) window.location.replace('/dashboard.html');
   },
 };
 
@@ -60,7 +60,7 @@ const api = {
 
       if (res.status === 401) {
         Auth.removeToken();
-        window.location.href = '/login.html';
+        window.location.replace('/login.html');
         return null;
       }
 
