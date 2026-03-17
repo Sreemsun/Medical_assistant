@@ -66,6 +66,21 @@ function scaleOpts(t) {
 const LS_READING_KEY = 'medassist_analytics_reading';
 let userReadings = JSON.parse(localStorage.getItem(LS_READING_KEY) || '{}');
 
+function getTodayLocalISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function updateReadingDateLabel() {
+  const dateEl = document.getElementById('readingDate');
+  if (!dateEl) return;
+  const todayIso = getTodayLocalISO();
+  dateEl.textContent = `Current date: ${DateFmt.long(todayIso)}`;
+}
+
 // ── Clinical reference thresholds ─────────────────────────────
 const THRESHOLDS = {
   Glucose: {
@@ -309,6 +324,7 @@ document.getElementById('readingToggle').addEventListener('click', () => {
 
 // ── Render reading input fields ────────────────────────────────
 function renderReadingForm(data) {
+  updateReadingDateLabel();
   document.getElementById('readingInputs').innerHTML = data.columns.map(col => `
     <div class="reading-field">
       <label>
@@ -328,7 +344,7 @@ function renderReadingForm(data) {
 }
 
 // ── Plot button ────────────────────────────────────────────────
-document.getElementById('plotReadingBtn').addEventListener('click', () => {
+document.getElementById('plotReadingBtn').addEventListener('click', async () => {
   if (!_cachedData) return;
   const readings = {};
   _cachedData.columns.forEach(col => {
@@ -342,13 +358,49 @@ document.getElementById('plotReadingBtn').addEventListener('click', () => {
 
   const count = Object.keys(readings).length;
   const fb = document.getElementById('readingFeedback');
-  fb.textContent = count > 0
-    ? `Your reading plotted as a highlighted dot at ${_cachedData.predictLabel} on ${count} chart${count > 1 ? 's' : ''}.`
-    : 'No valid values entered. Please fill in at least one field.';
-  fb.style.color = count > 0 ? '#10b981' : '#f59e0b';
+  if (count === 0) {
+    fb.textContent = 'No valid values entered. Please fill in at least one field.';
+    fb.style.color = '#f59e0b';
+    fb.style.display = 'block';
+    clearTimeout(fb._hideTimer);
+    fb._hideTimer = setTimeout(() => { fb.style.display = 'none'; }, 4000);
+    return;
+  }
+
+  // Save to dataset only when all required fields are provided.
+  const requiredKeys = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction'];
+  const hasAllRequired = requiredKeys.every(k => readings[k] !== undefined);
+
+  let saveMessage = '';
+  let savedToDataset = false;
+  if (hasAllRequired) {
+    const payload = {
+      ...readings,
+      Outcome: readings.Glucose >= 126 ? 1 : 0,
+      Date: getTodayLocalISO(),
+    };
+    const saveRes = await api.post('/health-readings/save', payload);
+    if (saveRes?.ok) {
+      savedToDataset = true;
+      saveMessage = ' Saved to dataset for today.';
+    } else {
+      saveMessage = ` Save failed: ${saveRes?.data?.message || 'Unable to persist reading.'}`;
+    }
+  } else {
+    saveMessage = ' Fill all fields to also save this reading to the dataset.';
+  }
+
+  fb.textContent = `Your reading plotted as a highlighted dot at ${_cachedData.predictLabel} on ${count} chart${count > 1 ? 's' : ''}.${saveMessage}`;
+  fb.style.color = hasAllRequired ? '#10b981' : '#f59e0b';
   fb.style.display = 'block';
   clearTimeout(fb._hideTimer);
-  fb._hideTimer = setTimeout(() => { fb.style.display = 'none'; }, 4000);
+  fb._hideTimer = setTimeout(() => { fb.style.display = 'none'; }, 6000);
+
+  // Pull latest dataset so stats/charts/predictions reflect the saved reading immediately.
+  if (savedToDataset) {
+    await loadAnalytics();
+    renderReadingAlerts(userReadings, _cachedData);
+  }
 });
 
 // ── Clear button ───────────────────────────────────────────────
