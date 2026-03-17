@@ -22,6 +22,9 @@ const videoRoutes       = require('./routes/video');
 
 const app = express();
 
+// Render runs behind a reverse proxy; trust first proxy hop for accurate client IPs.
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ────────────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
@@ -41,7 +44,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
-// Global rate limiting
+// Global API rate limiting (do not count static assets/page loads)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200,
@@ -49,7 +52,7 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(globalLimiter);
+app.use('/api', globalLimiter);
 
 // ─── General Middleware ─────────────────────────────────────────────────────
 app.use(cors({
