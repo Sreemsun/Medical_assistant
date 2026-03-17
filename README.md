@@ -69,6 +69,34 @@ Then open: `http://localhost:3000`
 
 ---
 
+## Render Deployment (With ML Predictions)
+
+To enable Python-based analytics predictions on Render, ensure both Node and Python dependencies are installed during build.
+
+### Option A — Use Blueprint
+
+This repo now includes [render.yaml](render.yaml). In Render:
+- Create a new **Blueprint** instance from this repository.
+- Render will use the build/start commands defined in [render.yaml](render.yaml).
+
+### Option B — Existing Web Service (Manual Settings)
+
+For an existing Render web service, set:
+- Build Command:
+    `npm install --prefix server && pip install -r ml/requirements.txt`
+- Start Command:
+    `npm start --prefix server`
+- Environment Variable:
+    `PYTHON_EXECUTABLE=python3`
+
+Python packages are pinned in [ml/requirements.txt](ml/requirements.txt).
+
+After deploy, verify:
+- `GET /api/analytics/predict` returns `"modelSource":"ml"`
+- The analytics page no longer shows the ML unavailable warning.
+
+---
+
 ## Project Structure
 
 ```
