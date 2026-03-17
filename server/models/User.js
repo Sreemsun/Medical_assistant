@@ -85,9 +85,6 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// ── Indexes ───────────────────────────────────────────────────────────────
-userSchema.index({ email: 1 });
-
 // ── Pre-save: Hash Password ────────────────────────────────────────────────
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -111,7 +108,8 @@ userSchema.methods.incLoginAttempts = async function () {
   }
   const updates = { $inc: { loginAttempts: 1 } };
   if (this.loginAttempts + 1 >= 5) {
-  // ── Pre-save: Hash Password ────────────────────────────────────────────────
+    updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // lock for 2 hours
+  }
   return this.updateOne(updates);
 };
 
