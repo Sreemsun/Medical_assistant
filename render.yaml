@@ -3,7 +3,6 @@ services:
     name: medical-assistant
     env: node
     plan: free
-    pythonVersion: 3.12.8
     buildCommand: npm install --prefix server
     startCommand: npm start --prefix server
     envVars:
