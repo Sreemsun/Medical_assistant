@@ -3,7 +3,7 @@ services:
     name: medical-assistant
     env: node
     plan: free
-    buildCommand: npm install --prefix server
+    buildCommand: python3 -m pip install -r ml/requirements.txt && npm install --prefix server
     startCommand: npm start --prefix server
     envVars:
       - key: NODE_ENV

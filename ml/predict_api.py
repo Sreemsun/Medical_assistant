@@ -24,9 +24,8 @@ Outputs JSON:
 import sys
 import json
 import os
-import numpy as np
+import csv
 import joblib
-import pandas as pd
 
 KEYS = [
     "Glucose",
@@ -55,10 +54,10 @@ def main():
     # Compute model R² on training data
     r2_val = None
     try:
-        data = pd.read_csv(data_path)
-        data["time_index"] = range(len(data))
-        X_train = data[["time_index"]]
-        y_train = data[KEYS]
+        with open(data_path, newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        X_train = [[i] for i in range(len(rows))]
+        y_train = [[float(r[k]) for k in KEYS] for r in rows]
         r2_val = round(float(model.score(X_train, y_train)), 3)
     except Exception:
         pass
@@ -69,7 +68,7 @@ def main():
         print(json.dumps({"error": f"Invalid time index: {e}"}))
         sys.exit(1)
 
-    X = np.array([[t] for t in time_indices])
+    X = [[t] for t in time_indices]
     preds = model.predict(X)
 
     predictions = {}
