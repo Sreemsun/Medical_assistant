@@ -1,0 +1,62 @@
+name: Monthly Model Retraining
+
+# Trigger: 1st of every month at 00:00 UTC
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # First day of each month
+  # Also allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Clone the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      # Step 3: Install ML dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas scikit-learn joblib
+      
+      # Step 4: Train the model
+      - name: Train Random Forest model
+        run: |
+          cd ml
+          python train_forecast_model.py
+          echo "Model training completed successfully"
+      
+      # Step 5: Check if model file changed
+      - name: Check for model changes
+        id: model_check
+        run: |
+          if git diff --quiet ml/health_forecast_model.pkl; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+      
+      # Step 6: Commit and push updated model
+      - name: Commit and push updated model
+        if: steps.model_check.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add ml/health_forecast_model.pkl
+          git commit -m "Auto-retrain model - $(date +'%Y-%m-%d')"
+          git push
+      
+      # Step 7: Notify on failure
+      - name: Notify on failure
+        if: failure()
+        run: echo "Model retraining failed - check logs"
