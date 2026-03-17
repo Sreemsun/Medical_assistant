@@ -7,9 +7,18 @@ const logger        = require('../utils/logger');
 
 const ML_SCRIPT = path.join(__dirname, '../../ml/predict_api.py');
 const ML_REQUIREMENTS = path.join(__dirname, '../../ml/requirements.txt');
+const ML_VENV_DIR = path.join(__dirname, '../../.mlvenv');
 
 function getPythonCandidates() {
   const candidates = [];
+  const venvPy = process.platform === 'win32'
+    ? path.join(ML_VENV_DIR, 'Scripts', 'python.exe')
+    : path.join(ML_VENV_DIR, 'bin', 'python');
+
+  if (fs.existsSync(venvPy)) {
+    candidates.push({ cmd: venvPy, prefixArgs: [] });
+  }
+
   if (process.env.PYTHON_EXECUTABLE) {
     candidates.push({ cmd: process.env.PYTHON_EXECUTABLE, prefixArgs: [] });
   }
@@ -64,9 +73,24 @@ function tryInstallMlDeps(cmd, prefixArgs) {
     return { ok: false, reason: `Missing requirements file: ${ML_REQUIREMENTS}` };
   }
 
-  const pip = spawnSync(cmd, [...prefixArgs, '-m', 'pip', 'install', '-r', ML_REQUIREMENTS], {
+  const venvCreate = spawnSync(cmd, [...prefixArgs, '-m', 'venv', ML_VENV_DIR], {
     encoding: 'utf-8',
-    timeout: 180000,
+    timeout: 120000,
+  });
+
+  if (venvCreate.error) return { ok: false, reason: venvCreate.error.message };
+  if (venvCreate.status !== 0) {
+    const out = (venvCreate.stderr || venvCreate.stdout || '').trim();
+    return { ok: false, reason: `venv create failed: ${out.slice(0, 300) || 'unknown error'}` };
+  }
+
+  const venvPy = process.platform === 'win32'
+    ? path.join(ML_VENV_DIR, 'Scripts', 'python.exe')
+    : path.join(ML_VENV_DIR, 'bin', 'python');
+
+  const pip = spawnSync(venvPy, ['-m', 'pip', 'install', '-r', ML_REQUIREMENTS], {
+    encoding: 'utf-8',
+    timeout: 240000,
   });
 
   if (pip.error) return { ok: false, reason: pip.error.message };
@@ -75,7 +99,7 @@ function tryInstallMlDeps(cmd, prefixArgs) {
     return { ok: false, reason: out.slice(0, 300) || 'pip install failed' };
   }
 
-  return { ok: true };
+  return { ok: true, pythonCmd: venvPy };
 }
 
 // ── ML model helper ───────────────────────────────────────────
@@ -102,7 +126,8 @@ function mlPredict(timeIndices) {
       if (needsMlDepsInstall(errOut)) {
         const install = tryInstallMlDeps(cmd, prefixArgs);
         if (install.ok) {
-          py = spawnSync(cmd, [...prefixArgs, ML_SCRIPT, ...timeIndices.map(String)], {
+          const retryCmd = install.pythonCmd || cmd;
+          py = spawnSync(retryCmd, [ML_SCRIPT, ...timeIndices.map(String)], {
             encoding: 'utf-8',
             timeout: 30000,
           });
