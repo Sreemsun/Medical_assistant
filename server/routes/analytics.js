@@ -363,7 +363,9 @@ router.get('/predict', (req, res) => {
       predictMonth:   ymToLabel(predYm),
       lastMonthLabel: ymToLabel(synthYm2),
       modelSource:    mlPreds ? 'ml' : 'ols-fallback',
-      ...(mlFallbackReason ? { warning: 'ML model unavailable in this environment. Showing statistical fallback predictions.' } : {}),
+      ...(mlFallbackReason ? {
+        warning: `ML model unavailable in this environment. Showing statistical fallback predictions. Reason: ${mlFallbackReason.slice(0, 220)}`,
+      } : {}),
     });
   } catch (err) {
     logger.error('analytics/predict error:', err.message);
