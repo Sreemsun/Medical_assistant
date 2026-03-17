@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     pythonVersion: 3.12.8
-    buildCommand: npm install --prefix server && python3 -m pip install -r ml/requirements.txt
+    buildCommand: npm install --prefix server
     startCommand: npm start --prefix server
     envVars:
       - key: NODE_ENV
