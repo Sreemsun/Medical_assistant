@@ -77,8 +77,13 @@ function getTodayLocalISO() {
 function updateReadingDateLabel() {
   const dateEl = document.getElementById('readingDate');
   if (!dateEl) return;
-  const todayIso = getTodayLocalISO();
-  dateEl.textContent = `Current date: ${DateFmt.long(todayIso)}`;
+  const todayText = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date());
+  dateEl.textContent = `Today: ${todayText}`;
 }
 
 // ── Clinical reference thresholds ─────────────────────────────
@@ -320,6 +325,7 @@ document.getElementById('readingToggle').addEventListener('click', () => {
   const open  = !body.classList.contains('hidden');
   body.classList.toggle('hidden', open);
   arrow.classList.toggle('open', !open);
+  if (!open) updateReadingDateLabel();
 });
 
 // ── Render reading input fields ────────────────────────────────
