@@ -19,6 +19,7 @@ const doctorRoutes      = require('./routes/doctors');
 const recordRoutes      = require('./routes/records');
 const messageRoutes     = require('./routes/messages');
 const videoRoutes       = require('./routes/video');
+const healthReadingsRoutes = require('./routes/health-readings');
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/doctors',     doctorRoutes);
 app.use('/api/records',     recordRoutes);
 app.use('/api/messages',    messageRoutes);
 app.use('/api/video',       videoRoutes);
+app.use('/api/health-readings', healthReadingsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
