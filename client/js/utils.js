@@ -27,7 +27,14 @@ const Auth = {
     else sessionStorage.setItem('medassist_user', str);
   },
   isLoggedIn: () => !!Auth.getToken(),
-  logout: () => {
+  logout: async () => {
+    try {
+      // Call logout endpoint to invalidate token on server
+      await api.post('/auth/logout');
+    } catch (err) {
+      console.warn('Logout API call failed, clearing local tokens anyway:', err);
+    }
+    // Clear local tokens and redirect
     Auth.removeToken();
     window.location.replace('/login.html');
   },

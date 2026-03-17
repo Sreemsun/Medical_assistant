@@ -210,4 +210,16 @@ router.get('/me', protect, async (req, res) => {
   res.json({ success: true, user: user.toSafeObject() });
 });
 
+// ── POST /api/auth/logout ──────────────────────────────────────────────────
+router.post('/logout', protect, async (req, res) => {
+  try {
+    // Token is validated by protect middleware
+    // In a production app, you would invalidate the token here (e.g., add to blacklist)
+    res.json({ success: true, message: 'Logged out successfully.' });
+  } catch (err) {
+    logger.error(`Logout error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Logout failed.' });
+  }
+});
+
 module.exports = router;
