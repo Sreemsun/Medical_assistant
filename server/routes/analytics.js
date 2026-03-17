@@ -6,6 +6,7 @@ const { protect }   = require('../middleware/auth');
 const logger        = require('../utils/logger');
 
 const ML_SCRIPT = path.join(__dirname, '../../ml/predict_api.py');
+const ML_REQUIREMENTS = path.join(__dirname, '../../ml/requirements.txt');
 
 function getPythonCandidates() {
   const candidates = [];
@@ -44,6 +45,39 @@ function parsePredictionOutput(stdout) {
   return JSON.parse(jsonLine);
 }
 
+function needsMlDepsInstall(errorText = '') {
+  const text = String(errorText).toLowerCase();
+  return (
+    text.includes("no module named 'joblib'") ||
+    text.includes('no module named joblib') ||
+    text.includes("no module named 'sklearn'") ||
+    text.includes('no module named sklearn') ||
+    text.includes("no module named 'numpy'") ||
+    text.includes('no module named numpy') ||
+    text.includes("no module named 'scipy'") ||
+    text.includes('no module named scipy')
+  );
+}
+
+function tryInstallMlDeps(cmd, prefixArgs) {
+  if (!fs.existsSync(ML_REQUIREMENTS)) {
+    return { ok: false, reason: `Missing requirements file: ${ML_REQUIREMENTS}` };
+  }
+
+  const pip = spawnSync(cmd, [...prefixArgs, '-m', 'pip', 'install', '-r', ML_REQUIREMENTS], {
+    encoding: 'utf-8',
+    timeout: 180000,
+  });
+
+  if (pip.error) return { ok: false, reason: pip.error.message };
+  if (pip.status !== 0) {
+    const out = (pip.stderr || pip.stdout || '').trim();
+    return { ok: false, reason: out.slice(0, 300) || 'pip install failed' };
+  }
+
+  return { ok: true };
+}
+
 // ── ML model helper ───────────────────────────────────────────
 // Spawns predict_api.py and returns
 // { r2: <float|null>, predictions: { "<idx>": { Glucose, ... }, ... } }
@@ -51,7 +85,7 @@ function mlPredict(timeIndices) {
   const attempts = [];
 
   for (const { cmd, prefixArgs } of getPythonCandidates()) {
-    const py = spawnSync(cmd, [...prefixArgs, ML_SCRIPT, ...timeIndices.map(String)], {
+    let py = spawnSync(cmd, [...prefixArgs, ML_SCRIPT, ...timeIndices.map(String)], {
       encoding: 'utf-8',
       timeout: 30000,
     });
@@ -63,6 +97,33 @@ function mlPredict(timeIndices) {
 
     if (py.status !== 0) {
       const errOut = (py.stderr || py.stdout || '').trim() || 'unknown error';
+
+      // Self-heal once: if core ML deps are missing, install and retry this interpreter.
+      if (needsMlDepsInstall(errOut)) {
+        const install = tryInstallMlDeps(cmd, prefixArgs);
+        if (install.ok) {
+          py = spawnSync(cmd, [...prefixArgs, ML_SCRIPT, ...timeIndices.map(String)], {
+            encoding: 'utf-8',
+            timeout: 30000,
+          });
+          if (py.status === 0) {
+            try {
+              const result = parsePredictionOutput(py.stdout);
+              if (result.error) throw new Error(result.error);
+              return result;
+            } catch (parseErr) {
+              attempts.push(`${cmd}: retry parse failed: ${parseErr.message}`);
+              continue;
+            }
+          }
+          const retryErr = (py.stderr || py.stdout || '').trim() || 'retry failed';
+          attempts.push(`${cmd}: retry failed after deps install: ${retryErr.slice(0, 220)}`);
+          continue;
+        }
+        attempts.push(`${cmd}: deps install failed: ${install.reason}`);
+        continue;
+      }
+
       attempts.push(`${cmd}: ${errOut.slice(0, 220)}`);
       continue;
     }
