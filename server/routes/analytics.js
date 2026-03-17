@@ -310,8 +310,8 @@ router.get('/predict', (req, res) => {
     }
 
     const lastYm         = yms[yms.length - 1];
-    const synthYm2       = lastYm;                // Feb '26 (actual last data month)
-    const predYm         = addMonths(lastYm, 2);  // Apr '26 (prediction target, skipping Mar '26)
+    const synthYm2       = lastYm;                // Mar '26 (actual last data month)
+    const predYm         = addMonths(lastYm, 1);  // Apr '26 (prediction target)
 
     const predictions = {};
     COLS.forEach(({ key }) => {
