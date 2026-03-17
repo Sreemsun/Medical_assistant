@@ -111,8 +111,7 @@ userSchema.methods.incLoginAttempts = async function () {
   }
   const updates = { $inc: { loginAttempts: 1 } };
   if (this.loginAttempts + 1 >= 5) {
-    updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // lock 2 hours
-  }
+  // ── Pre-save: Hash Password ────────────────────────────────────────────────
   return this.updateOne(updates);
 };
 

@@ -28,19 +28,27 @@ const Auth = {
   },
   isLoggedIn: () => !!Auth.getToken(),
   logout: () => {
-    console.log('Logout initiated...');
-    // Clear local tokens immediately
-    Auth.removeToken();
-    // Call logout endpoint to invalidate token on server (non-blocking)
-    api.post('/auth/logout').then(res => {
-      console.log('Server logout successful:', res);
-    }).catch(err => {
-      console.warn('Logout API call failed (still logging out locally):', err);
+    console.log('🔓 Logout initiated...');
+    
+    // Absolutely clear all token storage
+    try {
+      localStorage.removeItem('medassist_token');
+      localStorage.removeItem('medassist_user');
+      sessionStorage.removeItem('medassist_token');
+      sessionStorage.removeItem('medassist_user');
+      console.log('✓ Tokens cleared from storage');
+    } catch (e) {
+      console.error('Error clearing storage:', e);
+    }
+    
+    // Call server logout endpoint (fire and forget)
+    api.post('/auth/logout').catch(err => {
+      console.warn('⚠ Server endpoint not reachable:', err);
     });
-    // Redirect to login immediately after clearing tokens
-    setTimeout(() => {
-      window.location.replace('/login.html');
-    }, 100);
+    
+    // Redirect to login
+    console.log('→ Redirecting to login...');
+    window.location.href = '/login.html';
   },
   requireAuth: () => {
     if (!Auth.isLoggedIn()) window.location.replace('/login.html');
