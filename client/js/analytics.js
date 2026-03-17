@@ -825,14 +825,15 @@ async function loadPredictions() {
 
   const res = await api.get('/analytics/predict');
   if (!res?.ok) {
+    const errMsg = res?.data?.message || 'Failed to load predictions.';
     document.getElementById('predictGrid').innerHTML =
-      `<p style="color:#dc2626;font-size:0.85rem;">Failed to load predictions.</p>`;
+      `<p style="color:#dc2626;font-size:0.85rem;">${errMsg}</p>`;
     return;
   }
   renderPredictions(res.data);
 }
 
-function renderPredictions({ predictions, columns, predictMonth, lastMonthLabel }) {
+function renderPredictions({ predictions, columns, predictMonth, lastMonthLabel, warning }) {
   // Store for use in reading-vs-prediction comparison
   _predictedValues = {};
   columns.forEach(col => {
@@ -844,7 +845,7 @@ function renderPredictions({ predictions, columns, predictMonth, lastMonthLabel 
   const trendIcon  = { up: '↑', down: '↓', stable: '→' };
   const trendClass = { up: 'predict-up', down: 'predict-down', stable: 'predict-stable' };
 
-  grid.innerHTML = columns.map((col, ci) => {
+  const cards = columns.map((col, ci) => {
     const p     = predictions[col.key];
     const color = FEAT_COLORS[ci % FEAT_COLORS.length];
 
@@ -892,6 +893,8 @@ function renderPredictions({ predictions, columns, predictMonth, lastMonthLabel 
       </div>
     `;
   }).join('');
+
+  grid.innerHTML = `${warning ? `<div style="grid-column:1 / -1;padding:10px 12px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:0.82rem">${warning}</div>` : ''}${cards}`;
 }
 
 // ── Full render ────────────────────────────────────────────────

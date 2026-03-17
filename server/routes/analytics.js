@@ -7,20 +7,78 @@ const logger        = require('../utils/logger');
 
 const ML_SCRIPT = path.join(__dirname, '../../ml/predict_api.py');
 
+function getPythonCandidates() {
+  const candidates = [];
+  if (process.env.PYTHON_EXECUTABLE) {
+    candidates.push({ cmd: process.env.PYTHON_EXECUTABLE, prefixArgs: [] });
+  }
+
+  if (process.platform === 'win32') {
+    candidates.push(
+      { cmd: 'py', prefixArgs: ['-3'] },
+      { cmd: 'python', prefixArgs: [] },
+      { cmd: 'python3', prefixArgs: [] }
+    );
+  } else {
+    candidates.push(
+      { cmd: 'python3', prefixArgs: [] },
+      { cmd: 'python', prefixArgs: [] }
+    );
+  }
+
+  return candidates;
+}
+
+function parsePredictionOutput(stdout) {
+  const text = (stdout || '').trim();
+  if (!text) {
+    throw new Error('ML script returned empty output.');
+  }
+
+  // Accept JSON in the last line to tolerate informational output above it.
+  const jsonLine = text.split(/\r?\n/).reverse().find(line => line.trim().startsWith('{'));
+  if (!jsonLine) {
+    throw new Error(`ML script returned non-JSON output: ${text.slice(0, 200)}`);
+  }
+
+  return JSON.parse(jsonLine);
+}
+
 // ── ML model helper ───────────────────────────────────────────
 // Spawns predict_api.py and returns
 // { r2: <float|null>, predictions: { "<idx>": { Glucose, ... }, ... } }
 function mlPredict(timeIndices) {
-  const cmd = process.platform === 'win32' ? 'python' : 'python3';
-  const py  = spawnSync(cmd, [ML_SCRIPT, ...timeIndices.map(String)], {
-    encoding: 'utf-8',
-    timeout:  30000,
-  });
-  if (py.error) throw new Error(`ML model unavailable: ${py.error.message}`);
-  if (py.status !== 0) throw new Error(`ML script error: ${py.stderr || 'unknown error'}`);
-  const result = JSON.parse(py.stdout.trim());
-  if (result.error) throw new Error(`ML prediction failed: ${result.error}`);
-  return result;
+  const attempts = [];
+
+  for (const { cmd, prefixArgs } of getPythonCandidates()) {
+    const py = spawnSync(cmd, [...prefixArgs, ML_SCRIPT, ...timeIndices.map(String)], {
+      encoding: 'utf-8',
+      timeout: 30000,
+    });
+
+    if (py.error) {
+      attempts.push(`${cmd}: ${py.error.message}`);
+      continue;
+    }
+
+    if (py.status !== 0) {
+      const errOut = (py.stderr || py.stdout || '').trim() || 'unknown error';
+      attempts.push(`${cmd}: ${errOut.slice(0, 220)}`);
+      continue;
+    }
+
+    try {
+      const result = parsePredictionOutput(py.stdout);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      return result;
+    } catch (parseErr) {
+      attempts.push(`${cmd}: ${parseErr.message}`);
+    }
+  }
+
+  throw new Error(`ML model unavailable. Python launch attempts failed: ${attempts.join(' | ')}`);
 }
 
 const router = express.Router();
@@ -242,7 +300,14 @@ router.get('/predict', (req, res) => {
     const lastRowIdx = rows.length;
     const synthIdx2  = lastRowIdx - 1;    // last row of dataset → Feb reference value
     const predIdx    = lastRowIdx + 30;   // ~1 month ahead → Mar prediction
-    const mlPreds    = mlPredict([synthIdx2, predIdx]);
+    let mlPreds = null;
+    let mlFallbackReason = null;
+    try {
+      mlPreds = mlPredict([synthIdx2, predIdx]);
+    } catch (mlErr) {
+      mlFallbackReason = mlErr.message;
+      logger.warn(`analytics/predict ML unavailable; using OLS fallback: ${mlErr.message}`);
+    }
 
     const lastYm         = yms[yms.length - 1];
     const synthYm2       = lastYm;                // Feb '26 (actual last data month)
@@ -250,6 +315,7 @@ router.get('/predict', (req, res) => {
 
     const predictions = {};
     COLS.forEach(({ key }) => {
+      const aAll = trainYms.map(ym => avgOfGroup(allMap, ym, key));
       const aDia = trainYms.map(ym => avgOfGroup(dia, ym, key));
       const aHlt = trainYms.map(ym => avgOfGroup(hlt, ym, key));
 
@@ -268,19 +334,23 @@ router.get('/predict', (req, res) => {
         };
       };
 
-      // Overall: ML model
-      const mlValue     = +Math.max(0, mlPreds.predictions[String(predIdx)][key]).toFixed(2);
-      const mlLastMonth = +Math.max(0, mlPreds.predictions[String(synthIdx2)][key]).toFixed(2);
-      const mlChange    = +(mlValue - mlLastMonth).toFixed(2);
+      const overallPred = mlPreds
+        ? (() => {
+            const mlValue     = +Math.max(0, mlPreds.predictions[String(predIdx)][key]).toFixed(2);
+            const mlLastMonth = +Math.max(0, mlPreds.predictions[String(synthIdx2)][key]).toFixed(2);
+            const mlChange    = +(mlValue - mlLastMonth).toFixed(2);
+            return {
+              value:     mlValue,
+              lastMonth: mlLastMonth,
+              change:    mlChange,
+              r2:        mlPreds.r2,
+              trend:     mlChange > 0.01 ? 'up' : mlChange < -0.01 ? 'down' : 'stable',
+            };
+          })()
+        : buildPred(aAll);
 
       predictions[key] = {
-        overall: {
-          value:     mlValue,
-          lastMonth: mlLastMonth,
-          change:    mlChange,
-          r2:        mlPreds.r2,
-          trend:     mlChange > 0.01 ? 'up' : mlChange < -0.01 ? 'down' : 'stable',
-        },
+        overall: overallPred,
         diabetic: buildPred(aDia),
         healthy:  buildPred(aHlt),
       };
@@ -292,6 +362,8 @@ router.get('/predict', (req, res) => {
       columns:        COLS,
       predictMonth:   ymToLabel(predYm),
       lastMonthLabel: ymToLabel(synthYm2),
+      modelSource:    mlPreds ? 'ml' : 'ols-fallback',
+      ...(mlFallbackReason ? { warning: 'ML model unavailable in this environment. Showing statistical fallback predictions.' } : {}),
     });
   } catch (err) {
     logger.error('analytics/predict error:', err.message);

@@ -33,6 +33,7 @@ Edit `server/.env` and set:
 - `MONGODB_URI` — your MongoDB connection string
 - `JWT_SECRET` — a long, random string (min 32 chars)
 - `OPENAI_API_KEY` — your OpenAI API key (from platform.openai.com)
+- `PYTHON_EXECUTABLE` — optional absolute Python path for ML analytics predictions (recommended on Windows)
 - Email settings (optional, for email verification)
 
 ### 3. Start the Backend Server
